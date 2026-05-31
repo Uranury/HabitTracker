@@ -28,6 +28,12 @@ func InitDB(ctx context.Context, driverName, dsn string) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to ping DB: %w", err)
 	}
 
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("failed to enforce foreign keys: %w", err)
+	}
+
 	return db, nil
 }
 
