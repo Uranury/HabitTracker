@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"github.com/Uranury/HabitTracker/internal/auth"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
+
+	"github.com/Uranury/HabitTracker/internal/auth"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Auth struct {

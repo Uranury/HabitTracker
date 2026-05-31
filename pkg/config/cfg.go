@@ -25,10 +25,15 @@ type DB struct {
 }
 
 func (cfg DB) DSN() string {
-	return fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.SSLMode,
-	)
+	switch cfg.Driver {
+	case "sqlite", "sqlite3":
+		return cfg.Name
+	default:
+		return fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s sslmode=%s",
+			cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.SSLMode,
+		)
+	}
 }
 
 func Load() (*Config, error) {

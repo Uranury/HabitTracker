@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
-	"github.com/Uranury/HabitTracker/pkg/config"
-	"github.com/Uranury/HabitTracker/pkg/database"
-	"github.com/jmoiron/sqlx"
 	"log/slog"
 	"os"
+
+	"github.com/Uranury/HabitTracker/pkg/config"
+	"github.com/Uranury/HabitTracker/pkg/database"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Infra struct {

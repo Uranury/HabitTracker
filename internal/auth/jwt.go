@@ -2,9 +2,10 @@ package auth
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"time"
 )
 
 var AccessTokenTTL = time.Hour * 24
