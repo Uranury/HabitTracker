@@ -19,13 +19,15 @@ func NewTokenService(jwtKey []byte) *TokenService {
 }
 
 type Claims struct {
-	UserID uuid.UUID `json:"id"`
+	UserID   uuid.UUID `json:"id"`
+	TimeZone string    `json:"time_zone"`
 	jwt.RegisteredClaims
 }
 
-func (t *TokenService) Generate(userID uuid.UUID) (string, error) {
+func (t *TokenService) Generate(userID uuid.UUID, timeZone string) (string, error) {
 	claims := Claims{
-		UserID: userID,
+		UserID:   userID,
+		TimeZone: timeZone,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(AccessTokenTTL)),
 		},

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -18,9 +19,9 @@ type DB struct {
 	Port     string `yaml:"port" env:"DB_PORT" env-default:"5432"`
 	Host     string `yaml:"host" env:"DB_HOST" env-default:"localhost"`
 	User     string `yaml:"user" env:"DB_USER" env-default:"postgres"`
-	Password string `yaml:"password" env:"DB_PASSWORD" env-required:"true"`
-	Name     string `yaml:"name" env:"DB_NAME" env-required:"true"`
-	Driver   string `yaml:"driver" env:"DB_DRIVER" env-default:"postgres"`
+	Password string `yaml:"password" env:"DB_PASSWORD"`
+	Name     string `yaml:"name" env:"DB_NAME"`
+	Driver   string `yaml:"driver" env:"DB_DRIVER"`
 	SSLMode  string `yaml:"sslmode" env:"DB_SSLMODE" env-default:"disable"`
 }
 
@@ -37,6 +38,7 @@ func (cfg DB) DSN() string {
 }
 
 func Load() (*Config, error) {
+	_ = godotenv.Load()
 	var cfg Config
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		return nil, err

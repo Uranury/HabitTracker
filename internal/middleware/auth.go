@@ -15,10 +15,17 @@ type Auth struct {
 	authSvc *auth.TokenService
 }
 
+func NewAuth(authSvc *auth.TokenService) *Auth {
+	return &Auth{
+		authSvc: authSvc,
+	}
+}
+
 type contextKey string
 
 const (
-	userIDKey contextKey = "user_id"
+	userIDKey    contextKey = "user_id"
+	userTimeZone contextKey = "user_time_zone"
 )
 
 func (m *Auth) JWTAuth() gin.HandlerFunc {
@@ -37,6 +44,7 @@ func (m *Auth) JWTAuth() gin.HandlerFunc {
 		}
 
 		c.Set(userIDKey, claims.UserID)
+		c.Set(userTimeZone, claims.TimeZone)
 		c.Next()
 	}
 }
@@ -51,4 +59,16 @@ func GetUserID(c *gin.Context) (uuid.UUID, error) {
 		return uuid.Nil, errors.New("user ID has invalid type")
 	}
 	return uid, nil
+}
+
+func GetUserTimeZone(c *gin.Context) (timezone string, err error) {
+	val, exists := c.Get(string(userIDKey))
+	if !exists {
+		return "", errors.New("user time zone not found")
+	}
+	userTimeZone, ok := val.(string)
+	if !ok {
+		return "", errors.New("user time zone has invalid type")
+	}
+	return userTimeZone, nil
 }

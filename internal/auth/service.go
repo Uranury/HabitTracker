@@ -36,7 +36,7 @@ func (s *Service) Signup(ctx context.Context, username, password, timezone strin
 		UpdatedAt: now,
 	}
 
-	token, err := s.tokenSvc.Generate(u.ID)
+	token, err := s.tokenSvc.Generate(u.ID, timezone)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func (s *Service) Login(ctx context.Context, username string, password string) (
 		return "", errors.New("invalid password")
 	}
 
-	token, err := s.tokenSvc.Generate(usr.ID)
+	token, err := s.tokenSvc.Generate(usr.ID, usr.TimeZone)
 	if err != nil {
 		return "", err
 	}

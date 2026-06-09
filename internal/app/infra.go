@@ -2,6 +2,10 @@ package app
 
 import (
 	"context"
+	"github.com/Uranury/HabitTracker/internal/auth"
+	"github.com/Uranury/HabitTracker/internal/habit"
+	"github.com/Uranury/HabitTracker/internal/middleware"
+	"github.com/Uranury/HabitTracker/internal/user"
 	"log/slog"
 	"os"
 
@@ -12,9 +16,13 @@ import (
 )
 
 type Infra struct {
-	DBConn *sqlx.DB
-	Config *config.Config
-	Logger *slog.Logger
+	DBConn   *sqlx.DB
+	Config   *config.Config
+	Logger   *slog.Logger
+	UserSvc  *user.Service
+	AuthSvc  *auth.Service
+	HabitSvc *habit.Service
+	Middlw   *middleware.Auth
 }
 
 func New(ctx context.Context) (*Infra, func(), error) {
@@ -35,10 +43,24 @@ func New(ctx context.Context) (*Infra, func(), error) {
 		return nil, nil, err
 	}
 
+	userRepo := user.NewRepository(dbConn)
+	userSvc := user.NewService(userRepo)
+
+	tokenSvc := auth.NewTokenService([]byte(cfg.JWTSecret))
+	authSvc := auth.NewService(userRepo, tokenSvc)
+	habitRepo := habit.NewRepository(dbConn)
+	habitSvc := habit.NewService(habitRepo)
+
+	middlw := middleware.NewAuth(tokenSvc)
+
 	infra := &Infra{
-		DBConn: dbConn,
-		Config: cfg,
-		Logger: logger,
+		DBConn:   dbConn,
+		Config:   cfg,
+		Logger:   logger,
+		UserSvc:  userSvc,
+		AuthSvc:  authSvc,
+		HabitSvc: habitSvc,
+		Middlw:   middlw,
 	}
 
 	cleanup := func() {
