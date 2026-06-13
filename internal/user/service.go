@@ -24,12 +24,14 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	return u, nil
 }
 
-func (s *Service) UploadAvatar(ctx context.Context, userID uuid.UUID, avatar string) error {
+func (s *Service) UploadAvatar(ctx context.Context, userID uuid.UUID, avatar *string) error {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return err
 	}
-	user.Avatar = avatar
+	if avatar != nil {
+		user.Avatar = avatar
+	}
 	user.UpdatedAt = time.Now().UTC()
 	return s.repo.Update(ctx, user)
 }

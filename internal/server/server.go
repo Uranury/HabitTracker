@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Uranury/HabitTracker/internal/auth"
 	"github.com/Uranury/HabitTracker/internal/middleware"
 	"net/http"
 	"time"
@@ -10,12 +11,13 @@ import (
 )
 
 type Server struct {
-	router     *gin.Engine
-	httpServer *http.Server
-	midlw      *middleware.Auth
+	router      *gin.Engine
+	httpServer  *http.Server
+	midlw       *middleware.Auth
+	authHandler *auth.Handler
 }
 
-func NewServer(middlw *middleware.Auth) *Server {
+func NewServer(middlw *middleware.Auth, authHandler *auth.Handler) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -30,18 +32,16 @@ func NewServer(middlw *middleware.Auth) *Server {
 			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
-		midlw: middlw,
+		midlw:       middlw,
+		authHandler: authHandler,
 	}
 	return server
 }
 
 func (s *Server) setupRoutes() {
-	protected := s.router.Group("/protected", s.midlw.JWTAuth())
-	protected.GET("", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	authGroup := s.router.Group("/auth")
+	authGroup.POST("/signup", s.authHandler.Signup)
+	authGroup.POST("/login", s.authHandler.Login)
 }
 
 func (s *Server) Run() error {

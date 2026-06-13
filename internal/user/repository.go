@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"log"
+	"time"
 )
 
 type Repository interface {
@@ -25,25 +27,55 @@ func NewRepository(db *sqlx.DB) Repository {
 
 func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var u User
-	err := r.db.GetContext(ctx, &u, "SELECT * FROM users WHERE id = ?", id)
+	var createdAtStr, updatedAtStr string
+	query := "SELECT id, username, password, time_zone, avatar, created_at, updated_at FROM users WHERE id = ?"
+	err := r.db.QueryRowxContext(ctx, query, id).Scan(&u.ID, &u.Username, &u.Password, &u.TimeZone, &u.Avatar, &createdAtStr, &updatedAtStr)
 	if err != nil {
 		return nil, err
 	}
+
+	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
+	if err != nil {
+		return nil, err
+	}
+	updatedAt, err := time.Parse(time.RFC3339, updatedAtStr)
+	if err != nil {
+		return nil, err
+	}
+
+	u.CreatedAt = createdAt
+	u.UpdatedAt = updatedAt
+
 	return &u, nil
 }
 
 func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var u User
-	err := r.db.GetContext(ctx, &u, "SELECT * FROM users WHERE username = ?", username)
+	var createdAtStr, updatedAtStr string
+	query := "SELECT id, username, password, time_zone, avatar, created_at, updated_at FROM users WHERE username = ?"
+	err := r.db.QueryRowxContext(ctx, query, username).Scan(&u.ID, &u.Username, &u.Password, &u.TimeZone, &u.Avatar, &createdAtStr, &updatedAtStr)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("createdAt: %q, updatedAt: %q", createdAtStr, updatedAtStr)
+	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
+	if err != nil {
+		return nil, err
+	}
+	updatedAt, err := time.Parse(time.RFC3339, updatedAtStr)
+	if err != nil {
+		return nil, err
+	}
+
+	u.CreatedAt = createdAt
+	u.UpdatedAt = updatedAt
+
 	return &u, nil
 }
 
 func (r *repository) Create(ctx context.Context, u *User) error {
 	query := `INSERT INTO users (id, username, password, time_zone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, u.ID, u.Username, u.Password, u.TimeZone, u.Avatar, u.CreatedAt, u.UpdatedAt)
+	_, err := r.db.ExecContext(ctx, query, u.ID, u.Username, u.Password, u.TimeZone, u.CreatedAt.Format(time.RFC3339), u.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
