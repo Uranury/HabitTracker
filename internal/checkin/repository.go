@@ -25,7 +25,7 @@ func NewRepository(db *sqlx.DB) Repository {
 
 func (r *repository) Record(ctx context.Context, c *CheckIn) error {
 	query := `INSERT INTO checkins (id, user_id, habit_id, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date, c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
+	_, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date.Unix(), c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
@@ -44,9 +44,11 @@ func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) (_ []*Ch
 	for rows.Next() {
 		var c CheckIn
 		var createdAtStr, updatedAtStr string
-		if err = rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &c.Date, &createdAtStr, &updatedAtStr); err != nil {
+		var dateUnix int64
+		if err = rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &dateUnix, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
+		c.Date = time.Unix(dateUnix, 0).UTC()
 		c.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
 		if err != nil {
 			return nil, err
@@ -80,6 +82,7 @@ func (r *repository) UpdateStatus(ctx context.Context, checkinID uuid.UUID, stat
 }
 
 func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID) (_ []*CheckIn, err error) {
+
 	query := `SELECT id, user_id, habit_id, status, date, created_at, updated_at FROM checkins WHERE user_id = ? AND habit_id = ? ORDER BY date DESC`
 	rows, err := r.db.QueryxContext(ctx, query, userID, habitID)
 	if err != nil {
@@ -95,9 +98,11 @@ func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uu
 	for rows.Next() {
 		var c CheckIn
 		var createdAtStr, updatedAtStr string
-		if err := rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &c.Date, &createdAtStr, &updatedAtStr); err != nil {
+		var dateUnix int64
+		if err = rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &dateUnix, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
+		c.Date = time.Unix(dateUnix, 0).UTC()
 		c.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
 		if err != nil {
 			return nil, err
