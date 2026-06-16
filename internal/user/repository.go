@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"log"
 	"time"
 )
 
@@ -57,7 +56,6 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("createdAt: %q, updatedAt: %q", createdAtStr, updatedAtStr)
 	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
 	if err != nil {
 		return nil, err

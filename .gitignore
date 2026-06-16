@@ -38,3 +38,7 @@ go.sum
 
 # DB files
 *.db
+
+# MD files
+CLAUDE.md
+Milestones.md

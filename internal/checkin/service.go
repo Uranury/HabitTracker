@@ -20,27 +20,43 @@ func NewService(repo Repository, habitsRepo habit.Repository) *Service {
 	return &Service{repo: repo, habitsRepo: habitsRepo}
 }
 
-func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.UUID) (int, error) {
+func (svc *Service) CheckIn(ctx context.Context, userID, habitID uuid.UUID) error {
+	now := time.Now()
+	c := &CheckIn{ID: uuid.New(), UserID: userID, HabitID: habitID, Status: Checked, Date: now, CreatedAt: now, UpdatedAt: now}
+	return svc.repo.Record(ctx, c)
+}
+
+func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.UUID, timezone string) (int, error) {
 	hbt, err := svc.habitsRepo.GetHabitByID(ctx, userID, habitID)
 	if err != nil {
 		return 0, err
 	}
 	schedule := hbt.Schedule
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return 0, err
+	}
 	checkIns, err := svc.repo.GetByUserAndHabitID(ctx, userID, habitID)
 	if err != nil {
 		return 0, err
 	}
+	now := time.Now().In(loc)
+	lastScheduled := prevScheduledDay(now.AddDate(0, 0, 1), schedule)
+	if len(checkIns) == 0 || !sameDay(checkIns[0].Date.In(loc), lastScheduled) {
+		return 0, nil
+	}
+
 	streak := 0
 	for i, checkIn := range checkIns {
-		weekday := checkIn.Date.Weekday()
-		weekdayMask := uint(1) << weekday
+		weekday := checkIn.Date.In(loc).Weekday()
+		weekdayMask := uint8(1) << weekday
 		if weekdayMask&schedule == 0 || checkIn.Status != Checked {
 			break
 		}
 		if i > 0 {
 			prev := checkIns[i-1]
-			expected := prevScheduledDay(checkIn.Date, schedule)
-			if !sameDay(prev.Date, expected) {
+			expected := prevScheduledDay(checkIn.Date.In(loc), schedule)
+			if !sameDay(prev.Date.In(loc), expected) {
 				break
 			}
 		}

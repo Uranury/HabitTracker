@@ -83,8 +83,13 @@ func (r *repository) UpdateStatus(ctx context.Context, checkinID uuid.UUID, stat
 
 func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID) (_ []*CheckIn, err error) {
 
-	query := `SELECT id, user_id, habit_id, status, date, created_at, updated_at FROM checkins WHERE user_id = ? AND habit_id = ? ORDER BY date DESC`
-	rows, err := r.db.QueryxContext(ctx, query, userID, habitID)
+	query :=
+		`SELECT id, user_id, habit_id, status, date, created_at, updated_at 
+		FROM checkins 
+		WHERE user_id = ? AND habit_id = ? AND date <= ? 
+		ORDER BY date DESC`
+
+	rows, err := r.db.QueryxContext(ctx, query, userID, habitID, time.Now().Unix())
 	if err != nil {
 		return nil, err
 	}

@@ -24,8 +24,8 @@ func NewAuth(authSvc *auth.TokenService) *Auth {
 type contextKey string
 
 const (
-	userIDKey    contextKey = "user_id"
-	userTimeZone contextKey = "user_time_zone"
+	userIDKey       contextKey = "user_id"
+	userTimeZoneKey contextKey = "user_time_zone"
 )
 
 func (m *Auth) JWTAuth() gin.HandlerFunc {
@@ -44,7 +44,7 @@ func (m *Auth) JWTAuth() gin.HandlerFunc {
 		}
 
 		c.Set(userIDKey, claims.UserID)
-		c.Set(userTimeZone, claims.TimeZone)
+		c.Set(userTimeZoneKey, claims.TimeZone)
 		c.Next()
 	}
 }
@@ -62,7 +62,7 @@ func GetUserID(c *gin.Context) (uuid.UUID, error) {
 }
 
 func GetUserTimeZone(c *gin.Context) (timezone string, err error) {
-	val, exists := c.Get(string(userIDKey))
+	val, exists := c.Get(string(userTimeZoneKey))
 	if !exists {
 		return "", errors.New("user time zone not found")
 	}
