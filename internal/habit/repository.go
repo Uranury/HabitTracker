@@ -2,14 +2,20 @@ package habit
 
 import (
 	"context"
+	"database/sql"
+	"github.com/Uranury/HabitTracker/pkg/util"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"time"
 )
 
 type Repository interface {
 	Create(ctx context.Context, h *Habit) error
+	Update(ctx context.Context, h *Habit) error
+	Delete(ctx context.Context, userID, habitID uuid.UUID) error
 	GetHabitByID(ctx context.Context, userID, habitID uuid.UUID) (*Habit, error)
+	GetHabitsByUserID(ctx context.Context, userID uuid.UUID) ([]*Habit, error)
 }
 
 type repository struct {
@@ -26,23 +32,82 @@ func (r *repository) Create(ctx context.Context, h *Habit) error {
 	return err
 }
 
+func (r *repository) Update(ctx context.Context, h *Habit) error {
+	_, err := r.GetHabitByID(ctx, h.UserID, h.ID)
+	if err != nil {
+		return err
+	}
+	query := `
+		UPDATE habits SET name = COALESCE(?, name), schedule = COALESCE(?, schedule), description = ?
+		WHERE id = ? and user_id = ?
+	`
+	_, err = r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.ID, h.UserID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *repository) GetHabitByID(ctx context.Context, userID, habitID uuid.UUID) (*Habit, error) {
 	var h Habit
 	var createdAtStr, updatedAtStr string
 	query := `SELECT id, name, schedule, description, created_at, updated_at FROM habits WHERE user_id = ? AND id = ?`
 	err := r.db.QueryRowxContext(ctx, query, userID, habitID).Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &createdAtStr, &updatedAtStr)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrHabitNotFound
+		}
 		return nil, err
 	}
-	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
-	if err != nil {
+	if err = util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {
 		return nil, err
 	}
-	updatedAt, err := time.Parse(time.RFC3339, updatedAtStr)
-	if err != nil {
-		return nil, err
-	}
-	h.CreatedAt = createdAt
-	h.UpdatedAt = updatedAt
 	return &h, nil
+}
+
+func (r *repository) GetHabitsByUserID(ctx context.Context, userID uuid.UUID) (_ []*Habit, err error) {
+	query := `SELECT id, name, schedule, description, created_at, updated_at FROM habits WHERE user_id = ?`
+	rows, err := r.db.QueryxContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = errors.Wrap(cerr, "rows.Close()")
+		}
+	}()
+
+	var habits []*Habit
+	for rows.Next() {
+		var h Habit
+		var createdAtStr, updatedAtStr string
+		if err = rows.Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &createdAtStr, &updatedAtStr); err != nil {
+			return nil, err
+		}
+		if err = util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {
+			return nil, err
+		}
+
+		habits = append(habits, &h)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return habits, nil
+}
+
+func (r *repository) Delete(ctx context.Context, userID, habitID uuid.UUID) error {
+	query := `DELETE FROM habits WHERE user_id = ? AND id = ?`
+	res, err := r.db.ExecContext(ctx, query, userID, habitID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrHabitNotFound
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"github.com/Uranury/HabitTracker/pkg/util"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"time"
@@ -33,17 +34,10 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
 		return nil, err
 	}
 
-	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
+	err = util.ParseTime(&u, createdAtStr, updatedAtStr)
 	if err != nil {
 		return nil, err
 	}
-	updatedAt, err := time.Parse(time.RFC3339, updatedAtStr)
-	if err != nil {
-		return nil, err
-	}
-
-	u.CreatedAt = createdAt
-	u.UpdatedAt = updatedAt
 
 	return &u, nil
 }
@@ -56,17 +50,10 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 	if err != nil {
 		return nil, err
 	}
-	createdAt, err := time.Parse(time.RFC3339, createdAtStr)
+	err = util.ParseTime(&u, createdAtStr, updatedAtStr)
 	if err != nil {
 		return nil, err
 	}
-	updatedAt, err := time.Parse(time.RFC3339, updatedAtStr)
-	if err != nil {
-		return nil, err
-	}
-
-	u.CreatedAt = createdAt
-	u.UpdatedAt = updatedAt
 
 	return &u, nil
 }

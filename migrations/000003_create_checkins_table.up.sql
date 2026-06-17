@@ -6,5 +6,7 @@ CREATE TABLE IF NOT EXISTS checkins (
     date INTEGER NOT NULL,
 
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+
+    UNIQUE(user_id, habit_id, date)
 );

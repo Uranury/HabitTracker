@@ -16,3 +16,8 @@ type User struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
+
+func (u *User) SetTimes(createdAt, updatedAt time.Time) {
+	u.CreatedAt = createdAt
+	u.UpdatedAt = updatedAt
+}

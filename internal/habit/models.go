@@ -16,3 +16,8 @@ type Habit struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
+
+func (h *Habit) SetTimes(createdAt, updatedAt time.Time) {
+	h.CreatedAt = createdAt
+	h.UpdatedAt = updatedAt
+}

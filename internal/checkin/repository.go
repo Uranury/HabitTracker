@@ -2,6 +2,7 @@ package checkin
 
 import (
 	"context"
+	"github.com/Uranury/HabitTracker/pkg/util"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -24,8 +25,13 @@ func NewRepository(db *sqlx.DB) Repository {
 }
 
 func (r *repository) Record(ctx context.Context, c *CheckIn) error {
-	query := `INSERT INTO checkins (id, user_id, habit_id, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date.Unix(), c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
+	query := `
+	INSERT INTO checkins (id, user_id, habit_id, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT (user_id, habit_id, date) DO UPDATE SET
+		status = excluded.status,
+		updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	`
+	_, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date.Unix()/86400, c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
@@ -49,11 +55,7 @@ func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) (_ []*Ch
 			return nil, err
 		}
 		c.Date = time.Unix(dateUnix, 0).UTC()
-		c.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
-		if err != nil {
-			return nil, err
-		}
-		c.UpdatedAt, err = time.Parse(time.RFC3339, updatedAtStr)
+		err = util.ParseTime(&c, createdAtStr, updatedAtStr)
 		if err != nil {
 			return nil, err
 		}
@@ -108,11 +110,7 @@ func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uu
 			return nil, err
 		}
 		c.Date = time.Unix(dateUnix, 0).UTC()
-		c.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
-		if err != nil {
-			return nil, err
-		}
-		c.UpdatedAt, err = time.Parse(time.RFC3339, updatedAtStr)
+		err = util.ParseTime(&c, createdAtStr, updatedAtStr)
 		if err != nil {
 			return nil, err
 		}
