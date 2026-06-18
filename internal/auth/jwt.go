@@ -41,7 +41,7 @@ func (t *TokenService) Generate(userID uuid.UUID, timeZone string) (string, erro
 	return tokenString, nil
 }
 
-func (t *TokenService) Validate(tokenString string) (*Claims, error) {
+func (t *TokenService) Validate(tokenString string) (uuid.UUID, string, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -50,10 +50,10 @@ func (t *TokenService) Validate(tokenString string) (*Claims, error) {
 		return t.jwtKey, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+		return uuid.Nil, "", fmt.Errorf("failed to parse token: %w", err)
 	}
 	if token == nil || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return uuid.Nil, "", fmt.Errorf("invalid token")
 	}
-	return claims, nil
+	return claims.UserID, claims.TimeZone, nil
 }

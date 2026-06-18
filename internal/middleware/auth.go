@@ -5,20 +5,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Uranury/HabitTracker/internal/auth"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-type Auth struct {
-	authSvc *auth.TokenService
+// TokenValidator is satisfied by auth.TokenService. Defined here so middleware
+// does not import the auth package, avoiding a dependency cycle with user.
+type TokenValidator interface {
+	Validate(tokenString string) (userID uuid.UUID, timeZone string, err error)
 }
 
-func NewAuth(authSvc *auth.TokenService) *Auth {
-	return &Auth{
-		authSvc: authSvc,
-	}
+type Auth struct {
+	validator TokenValidator
+}
+
+func NewAuth(v TokenValidator) *Auth {
+	return &Auth{validator: v}
 }
 
 type contextKey string
@@ -37,14 +39,14 @@ func (m *Auth) JWTAuth() gin.HandlerFunc {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		claims, err := m.authSvc.Validate(tokenString)
+		userID, timeZone, err := m.validator.Validate(tokenString)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		c.Set(userIDKey, claims.UserID)
-		c.Set(userTimeZoneKey, claims.TimeZone)
+		c.Set(string(userIDKey), userID)
+		c.Set(string(userTimeZoneKey), timeZone)
 		c.Next()
 	}
 }
@@ -52,7 +54,7 @@ func (m *Auth) JWTAuth() gin.HandlerFunc {
 func GetUserID(c *gin.Context) (uuid.UUID, error) {
 	val, exists := c.Get(string(userIDKey))
 	if !exists {
-		return uuid.Nil, errors.New("user ID not found")
+		return uuid.Nil, errors.New("user ID not found in context")
 	}
 	uid, ok := val.(uuid.UUID)
 	if !ok {
@@ -61,14 +63,14 @@ func GetUserID(c *gin.Context) (uuid.UUID, error) {
 	return uid, nil
 }
 
-func GetUserTimeZone(c *gin.Context) (timezone string, err error) {
+func GetUserTimeZone(c *gin.Context) (string, error) {
 	val, exists := c.Get(string(userTimeZoneKey))
 	if !exists {
-		return "", errors.New("user time zone not found")
+		return "", errors.New("user time zone not found in context")
 	}
-	userTimeZone, ok := val.(string)
+	tz, ok := val.(string)
 	if !ok {
 		return "", errors.New("user time zone has invalid type")
 	}
-	return userTimeZone, nil
+	return tz, nil
 }
