@@ -64,7 +64,7 @@ func (h *Handler) GetHabit(c *gin.Context) {
 		return
 	}
 
-	param := c.Param("habitID")
+	param := c.Param("id")
 	id, err := uuid.Parse(param)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

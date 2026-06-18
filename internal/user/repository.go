@@ -74,7 +74,7 @@ func (r *repository) Create(ctx context.Context, u *User) error {
 
 func (r *repository) UpdateAvatar(ctx context.Context, userID uuid.UUID, avatar string) error {
 	query := `UPDATE users SET avatar=? WHERE id=?`
-	res, err := r.db.ExecContext(ctx, query, userID, avatar)
+	res, err := r.db.ExecContext(ctx, query, avatar, userID)
 	if err != nil {
 		return err
 	}
