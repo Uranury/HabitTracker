@@ -1,7 +1,6 @@
 # Milestones
 
 ## Bugs
-
 ---
 
 ## M1 — Wire the existing code
