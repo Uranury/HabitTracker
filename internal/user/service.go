@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"github.com/google/uuid"
-	"time"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
@@ -17,21 +17,33 @@ func NewService(repo Repository) *Service {
 }
 
 func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
-	u, err := s.repo.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
+	return s.repo.FindByID(ctx, id)
 }
 
-func (s *Service) UploadAvatar(ctx context.Context, userID uuid.UUID, avatar *string) error {
-	user, err := s.repo.FindByID(ctx, userID)
+func (s *Service) UploadAvatar(ctx context.Context, userID uuid.UUID, avatar string) error {
+	return s.repo.UpdateAvatar(ctx, userID, avatar)
+}
+
+func (s *Service) UpdateTimezone(ctx context.Context, userID uuid.UUID, timezone string) error {
+	return s.repo.UpdateTimezone(ctx, userID, timezone)
+}
+
+func (s *Service) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	return s.repo.UpdateUsername(ctx, userID, username)
+}
+
+func (s *Service) UpdatePassword(ctx context.Context, userID uuid.UUID, oldPass, newPass string) error {
+	u, err := s.GetByID(ctx, userID)
 	if err != nil {
 		return err
 	}
-	if avatar != nil {
-		user.Avatar = avatar
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(oldPass))
+	if err != nil {
+		return ErrInvalidPassword
 	}
-	user.UpdatedAt = time.Now().UTC()
-	return s.repo.Update(ctx, user)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdatePassword(ctx, userID, string(hashed))
 }

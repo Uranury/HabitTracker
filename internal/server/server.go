@@ -5,6 +5,7 @@ import (
 	"github.com/Uranury/HabitTracker/internal/auth"
 	"github.com/Uranury/HabitTracker/internal/habit"
 	"github.com/Uranury/HabitTracker/internal/middleware"
+	"github.com/Uranury/HabitTracker/internal/user"
 	"net/http"
 	"time"
 
@@ -17,9 +18,10 @@ type Server struct {
 	midlw        *middleware.Auth
 	authHandler  *auth.Handler
 	habitHandler *habit.Handler
+	userHandler  *user.Handler
 }
 
-func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler) *Server {
+func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler, userHandler *user.Handler) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -37,6 +39,7 @@ func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler 
 		midlw:        middlw,
 		authHandler:  authHandler,
 		habitHandler: habitHandler,
+		userHandler:  userHandler,
 	}
 	return server
 }
@@ -55,6 +58,16 @@ func (s *Server) setupRoutes() {
 			habitsGroup.PATCH("/:id", s.habitHandler.UpdateHabit)
 			habitsGroup.GET("/:id", s.habitHandler.GetHabit)
 			habitsGroup.GET("", s.habitHandler.ListHabits)
+		}
+
+		usersGroup := api.Group("/users")
+		{
+			usersGroup.GET("/me", s.userHandler.GetProfile)
+			usersGroup.PATCH("/me/avatar", s.userHandler.UpdateAvatar)
+			usersGroup.POST("/me/avatar", s.userHandler.UpdateAvatar)
+			usersGroup.PATCH("/me/password", s.userHandler.UpdatePassword)
+			usersGroup.PATCH("/me/username", s.userHandler.UpdateUsername)
+			usersGroup.PATCH("/me/timezone", s.userHandler.UpdateTimezone)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/Uranury/HabitTracker/internal/user"
 
 	"github.com/Uranury/HabitTracker/internal/app"
 	"github.com/Uranury/HabitTracker/internal/auth"
@@ -17,8 +18,9 @@ func main() {
 	}
 	authHandler := auth.NewHandler(infra.AuthSvc)
 	habitHandler := habit.NewHandler(infra.HabitSvc)
+	userHandler := user.NewHandler(infra.UserSvc)
 	defer cleanup()
-	serv := server.NewServer(infra.Middlw, authHandler, habitHandler)
+	serv := server.NewServer(infra.Middlw, authHandler, habitHandler, userHandler)
 	if err := serv.Run(); err != nil {
 		panic(err)
 	}

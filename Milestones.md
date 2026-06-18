@@ -37,9 +37,9 @@ Everything in this milestone is already implemented but not connected.
 
 ## M4 — User profile
 
-- [ ] `GET /me` — return current user's profile (id, username, timezone, avatar)
-- [ ] `PUT /me` — update timezone (and optionally username)
-- [ ] `POST /me/avatar` — upload avatar image (`UserService.UploadAvatar` exists, no endpoint yet)
+- [+] `GET /me` — return current user's profile (id, username, timezone, avatar)
+- [+] `PUT /me` — update timezone (and optionally username)
+- [+] `POST /me/avatar` — upload avatar image (`UserService.UploadAvatar` exists, no endpoint yet)
 
 ---
 

@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+type UserStore interface {
+}
+
 type Service struct {
 	userRepo user.Repository
 	tokenSvc *TokenService
