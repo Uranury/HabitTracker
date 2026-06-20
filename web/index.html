@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HabitTracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; }
+
+    /* --- Auth --- */
+    #auth { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .auth-card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); width: 360px; }
+    .auth-card h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #1e293b; }
+    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
+    .tab { padding: 0.4rem 1rem 0.6rem; cursor: pointer; font-weight: 500; color: #94a3b8; font-size: 0.9rem; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    /* --- Forms --- */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    input[type=text], input[type=password], textarea {
+      width: 100%; padding: 0.5rem 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 6px;
+      font-size: 0.95rem; color: #1e293b; outline: none; transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus { border-color: #2563eb; }
+    textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+    .err { color: #dc2626; font-size: 0.82rem; margin-top: 0.4rem; min-height: 1.1rem; }
+
+    /* --- Buttons --- */
+    button { cursor: pointer; border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 500; transition: background 0.15s, opacity 0.15s; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: #2563eb; color: white; padding: 0.55rem 1.1rem; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-full { width: 100%; padding: 0.65rem; font-size: 0.95rem; }
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.82rem; }
+    .btn-secondary { background: #f1f5f9; color: #475569; padding: 0.55rem 1.1rem; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: #fee2e2; color: #dc2626; padding: 0.55rem 1.1rem; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #16a34a; color: white; padding: 0.6rem 1.4rem; font-size: 0.95rem; }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+
+    /* --- App shell --- */
+    #app { display: none; height: 100vh; flex-direction: column; }
+    .topbar {
+      background: #1e293b; color: white; padding: 0 1.25rem;
+      height: 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .topbar-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #94a3b8; }
+    .topbar-user { color: #cbd5e1; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* --- Sidebar --- */
+    .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 0.9rem 1rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-header span { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+    .habit-list { flex: 1; overflow-y: auto; }
+    .habit-item {
+      padding: 0.7rem 1rem; cursor: pointer; border-bottom: 1px solid #f8fafc;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .habit-item:hover { background: #f8fafc; }
+    .habit-item.active { background: #eff6ff; border-left: 3px solid #2563eb; padding-left: calc(1rem - 3px); }
+    .habit-name { font-size: 0.88rem; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .habit-streak-badge { font-size: 0.78rem; color: #f59e0b; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .sidebar-empty { padding: 1.5rem 1rem; font-size: 0.85rem; color: #94a3b8; text-align: center; }
+
+    /* --- Detail panel --- */
+    .detail { flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .detail-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #94a3b8; font-size: 0.95rem; }
+    .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; }
+    .detail-name { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
+    .detail-desc { font-size: 0.875rem; color: #64748b; margin-bottom: 1rem; }
+    .detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+    /* --- Schedule chips --- */
+    .schedule-row { display: flex; gap: 0.3rem; margin-bottom: 1.25rem; }
+    .day-chip {
+      width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; background: #f1f5f9; color: #94a3b8;
+    }
+    .day-chip.on { background: #2563eb; color: white; }
+
+    /* --- Stat cards --- */
+    .stat-row { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
+    .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.9rem 1.25rem; flex: 1; }
+    .stat-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: #1e293b; line-height: 1; }
+
+    /* --- Check-in section --- */
+    .checkin-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .checkin-msg { font-size: 0.85rem; color: #64748b; }
+    .checkin-msg.ok { color: #16a34a; }
+    .checkin-msg.err { color: #dc2626; }
+
+    /* --- History table --- */
+    .section-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.6rem; }
+    .history-table { background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+    .history-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 1rem; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
+    .history-row:last-child { border-bottom: none; }
+    .history-date { color: #475569; }
+    .history-status { color: #16a34a; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .history-empty { padding: 1rem; color: #94a3b8; font-size: 0.875rem; text-align: center; }
+    .pager { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+    /* --- Modal --- */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 200; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal { background: white; border-radius: 10px; padding: 1.5rem; width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+    /* --- Day picker --- */
+    .day-picker { display: flex; gap: 0.3rem; }
+    .day-toggle {
+      width: 38px; height: 38px; border-radius: 50%; border: 2px solid #e2e8f0;
+      background: white; color: #94a3b8; font-size: 0.72rem; font-weight: 700;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .day-toggle.on { border-color: #2563eb; background: #2563eb; color: white; }
+    .day-toggle:hover:not(.on) { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
+  </style>
+</head>
+<body>
+
+<!-- ── Auth ── -->
+<div id="auth">
+  <div class="auth-card">
+    <h1>HabitTracker</h1>
+    <div class="tabs">
+      <div class="tab active" id="tab-login-btn" onclick="switchTab('login')">Login</div>
+      <div class="tab" id="tab-signup-btn" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+
+    <div id="tab-login">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-primary btn-full" onclick="doLogin()">Login</button>
+      <div class="err" id="login-err"></div>
+    </div>
+
+    <div id="tab-signup" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="signup-user" placeholder="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-pass" placeholder="password">
+      </div>
+      <div class="form-group">
+        <label>Timezone</label>
+        <input type="text" id="signup-tz" placeholder="e.g. America/New_York" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button class="btn-primary btn-full" onclick="doSignup()">Sign Up</button>
+      <div class="err" id="signup-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+  <div class="topbar">
+    <span class="topbar-title">HabitTracker</span>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="btn-secondary btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>Habits</span>
+        <button class="btn-primary btn-sm" onclick="openCreate()">+ New</button>
+      </div>
+      <div class="habit-list" id="habit-list"></div>
+    </div>
+    <div class="detail" id="detail">
+      <div class="detail-placeholder">Select a habit to see details</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Habit modal ── -->
+<div class="overlay" id="habit-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">New Habit</div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="m-name" placeholder="e.g. Morning run">
+    </div>
+    <div class="form-group">
+      <label>Schedule</label>
+      <div class="day-picker" id="day-picker"></div>
+    </div>
+    <div class="form-group">
+      <label>Description <span style="color:#cbd5e1;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <textarea id="m-desc" placeholder="Add a description…"></textarea>
+    </div>
+    <div class="err" id="modal-err"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-submit" onclick="submitHabit()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const PAGE = 15;
+
+let token = localStorage.getItem('ht_token');
+let selectedId = null;
+let habits = [];
+let editingId = null;
+let pickerDays = new Set();
+let historyPage = 0;
+
+// ── HTTP ──────────────────────────────────────────
+
+async function http(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  let data = null;
+  if ((res.headers.get('content-type') || '').includes('json')) data = await res.json();
+  if (!res.ok) throw new Error((data && data.error) || res.statusText);
+  return data;
+}
+
+// ── Auth ──────────────────────────────────────────
+
+function switchTab(t) {
+  const isLogin = t === 'login';
+  document.getElementById('tab-login-btn').classList.toggle('active', isLogin);
+  document.getElementById('tab-signup-btn').classList.toggle('active', !isLogin);
+  document.getElementById('tab-login').style.display = isLogin ? '' : 'none';
+  document.getElementById('tab-signup').style.display = isLogin ? 'none' : '';
+}
+
+async function doLogin() {
+  const username = val('login-user'), password = val('login-pass');
+  document.getElementById('login-err').textContent = '';
+  try {
+    const d = await http('POST', '/auth/login', { username, password });
+    setToken(d.token);
+    await boot();
+  } catch (e) { document.getElementById('login-err').textContent = e.message; }
+}
+
+async function doSignup() {
+  const username = val('signup-user'), password = val('signup-pass');
+  const time_zone = val('signup-tz') || 'UTC';
+  document.getElementById('signup-err').textContent = '';
+  try {
+    const d = await http('POST', '/auth/signup', { username, password, time_zone });
+    setToken(d.token);
+    await boot();
+  } catch (e) { document.getElementById('signup-err').textContent = e.message; }
+}
+
+function doLogout() {
+  setToken(null);
+  selectedId = null; habits = [];
+  show('auth'); hide('app');
+}
+
+function setToken(t) {
+  token = t;
+  if (t) localStorage.setItem('ht_token', t);
+  else localStorage.removeItem('ht_token');
+}
+
+// ── Boot ──────────────────────────────────────────
+
+async function boot() {
+  hide('auth'); show('app');
+  await loadProfile();
+  await loadHabits();
+}
+
+async function loadProfile() {
+  try {
+    const d = await http('GET', '/api/users/me');
+    const u = d.user;
+    document.getElementById('topbar-user').textContent = u.username + ' · ' + u.timezone;
+  } catch (_) {}
+}
+
+// ── Habits ────────────────────────────────────────
+
+async function loadHabits() {
+  try {
+    const d = await http('GET', '/api/habits');
+    habits = d.habits || [];
+    renderSidebar();
+    if (selectedId) {
+      const still = habits.find(h => h.id === selectedId);
+      if (still) await renderDetail(still);
+    }
+  } catch (e) { console.error(e); }
+}
+
+function renderSidebar() {
+  const el = document.getElementById('habit-list');
+  if (!habits.length) {
+    el.innerHTML = '<div class="sidebar-empty">No habits yet.<br>Create your first one!</div>';
+    return;
+  }
+  el.innerHTML = habits.map(h => `
+    <div class="habit-item ${h.id === selectedId ? 'active' : ''}" onclick="pickHabit('${h.id}')">
+      <span class="habit-name">${esc(h.name)}</span>
+      <span class="habit-streak-badge" id="sb-${h.id}"></span>
+    </div>
+  `).join('');
+  habits.forEach(loadSidebarStreak);
+}
+
+async function loadSidebarStreak(h) {
+  try {
+    const d = await http('GET', '/api/habits/' + h.id + '/streak');
+    const el = document.getElementById('sb-' + h.id);
+    if (el) el.textContent = d.streak > 0 ? '🔥' + d.streak : '';
+  } catch (_) {}
+}
+
+async function pickHabit(id) {
+  selectedId = id;
+  historyPage = 0;
+  renderSidebar();
+  const h = habits.find(x => x.id === id);
+  if (h) await renderDetail(h);
+}
+
+async function renderDetail(h) {
+  const streak = await http('GET', '/api/habits/' + h.id + '/streak').then(d => d.streak).catch(() => 0);
+  document.getElementById('detail').innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-name">${esc(h.name)}</div>
+        ${h.description ? `<div class="detail-desc">${esc(h.description)}</div>` : ''}
+      </div>
+      <div class="detail-actions">
+        <button class="btn-secondary btn-sm" onclick="openEdit()">Edit</button>
+        <button class="btn-danger btn-sm" onclick="doDelete()">Delete</button>
+      </div>
+    </div>
+    <div class="schedule-row">${DAYS.map((d,i) => `
+      <div class="day-chip ${h.schedule & (1<<i) ? 'on' : ''}">${d.slice(0,2)}</div>
+    `).join('')}</div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Current Streak</div>
+        <div class="stat-value">${streak} <span style="font-size:1.4rem">🔥</span></div>
+      </div>
+    </div>
+    <div class="checkin-bar">
+      <button class="btn-success" id="ci-btn" onclick="doCheckIn('${h.id}')">Check In Today</button>
+      <span class="checkin-msg" id="ci-msg"></span>
+    </div>
+    <div class="section-label">History</div>
+    <div id="history-wrap"></div>
+    <div class="pager" id="pager"></div>
+  `;
+  await loadHistory(h.id);
+}
+
+async function loadHistory(habitId) {
+  try {
+    const d = await http('GET', `/api/habits/${habitId}/checkins?limit=${PAGE}&offset=${historyPage * PAGE}`);
+    const rows = d.checkins || [];
+    const wrap = document.getElementById('history-wrap');
+    if (!wrap) return;
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="history-table"><div class="history-empty">No check-ins yet</div></div>';
+    } else {
+      wrap.innerHTML = '<div class="history-table">' + rows.map(c => `
+        <div class="history-row">
+          <span class="history-date">${fmtDate(c.date)}</span>
+          <span class="history-status">${c.status}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+    const pager = document.getElementById('pager');
+    if (!pager) return;
+    pager.innerHTML = '';
+    if (historyPage > 0) {
+      const b = document.createElement('button');
+      b.className = 'btn-secondary btn-sm'; b.textContent = '← Prev';
+      b.onclick = () => { historyPage--; loadHistory(habitId); };
+      pager.appendChild(b);
+    }
+    if (rows.length === PAGE) {
+      const b = document.createElement('button');
+      b.className = 'btn-secondary btn-sm'; b.textContent = 'Next →';
+      b.onclick = () => { historyPage++; loadHistory(habitId); };
+      pager.appendChild(b);
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function doCheckIn(habitId) {
+  const btn = document.getElementById('ci-btn');
+  const msg = document.getElementById('ci-msg');
+  btn.disabled = true;
+  msg.className = 'checkin-msg';
+  try {
+    await http('POST', '/api/habits/' + habitId + '/checkin');
+    msg.textContent = 'Checked in!'; msg.className = 'checkin-msg ok';
+    historyPage = 0;
+    await loadHistory(habitId);
+    await loadSidebarStreak(habits.find(h => h.id === habitId));
+    const d = await http('GET', '/api/habits/' + habitId + '/streak');
+    const el = document.querySelector('.stat-value');
+    if (el) el.innerHTML = d.streak + ' <span style="font-size:1.4rem">🔥</span>';
+  } catch (e) {
+    msg.textContent = e.message; msg.className = 'checkin-msg err';
+    btn.disabled = false;
+  }
+}
+
+async function doDelete() {
+  const h = habits.find(x => x.id === selectedId);
+  if (!h || !confirm('Delete "' + h.name + '"? This cannot be undone.')) return;
+  try {
+    await http('DELETE', '/api/habits/' + selectedId);
+    selectedId = null;
+    document.getElementById('detail').innerHTML = '<div class="detail-placeholder">Select a habit to see details</div>';
+    await loadHabits();
+  } catch (e) { alert(e.message); }
+}
+
+// ── Modal ─────────────────────────────────────────
+
+function buildPicker() {
+  document.getElementById('day-picker').innerHTML = DAYS.map((d, i) => `
+    <button type="button" class="day-toggle ${pickerDays.has(i) ? 'on' : ''}" onclick="toggleDay(${i})">${d.slice(0,2)}</button>
+  `).join('');
+}
+
+function toggleDay(i) {
+  pickerDays.has(i) ? pickerDays.delete(i) : pickerDays.add(i);
+  buildPicker();
+}
+
+function scheduleVal() { return [...pickerDays].reduce((a, i) => a | (1 << i), 0); }
+
+function openCreate() {
+  editingId = null;
+  pickerDays = new Set([1,2,3,4,5]);
+  document.getElementById('modal-title').textContent = 'New Habit';
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-desc').value = '';
+  document.getElementById('modal-submit').textContent = 'Create';
+  document.getElementById('modal-err').textContent = '';
+  buildPicker();
+  document.getElementById('habit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('m-name').focus(), 50);
+}
+
+function openEdit() {
+  const h = habits.find(x => x.id === selectedId);
+  if (!h) return;
+  editingId = h.id;
+  pickerDays = new Set(DAYS.map((_,i) => i).filter(i => h.schedule & (1 << i)));
+  document.getElementById('modal-title').textContent = 'Edit Habit';
+  document.getElementById('m-name').value = h.name;
+  document.getElementById('m-desc').value = h.description || '';
+  document.getElementById('modal-submit').textContent = 'Save';
+  document.getElementById('modal-err').textContent = '';
+  buildPicker();
+  document.getElementById('habit-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('habit-modal').classList.remove('open'); }
+
+async function submitHabit() {
+  const name = val('m-name');
+  const description = val('m-desc') || null;
+  const schedule = scheduleVal();
+  document.getElementById('modal-err').textContent = '';
+  if (!name) { document.getElementById('modal-err').textContent = 'Name is required.'; return; }
+  if (!schedule) { document.getElementById('modal-err').textContent = 'Pick at least one day.'; return; }
+  try {
+    if (editingId) {
+      await http('PATCH', '/api/habits/' + editingId, { name, schedule, description });
+    } else {
+      await http('POST', '/api/habits', { name, schedule, description });
+    }
+    closeModal();
+    await loadHabits();
+    if (editingId) {
+      selectedId = editingId;
+      const updated = habits.find(h => h.id === editingId);
+      if (updated) await renderDetail(updated);
+    }
+  } catch (e) { document.getElementById('modal-err').textContent = e.message; }
+}
+
+// ── Utils ─────────────────────────────────────────
+
+function val(id) { return document.getElementById(id).value.trim(); }
+function show(id) { document.getElementById(id).style.display = id === 'app' ? 'flex' : ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(iso) {
+  // Dates are stored as midnight UTC of the user's local day — display in UTC to match
+  return new Date(iso).toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric', timeZone:'UTC' });
+}
+
+// ── Bootstrap ─────────────────────────────────────
+
+if (token) {
+  boot().catch(() => { setToken(null); show('auth'); });
+} else {
+  show('auth');
+}
+</script>
+</body>
+</html>

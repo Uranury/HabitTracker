@@ -17,9 +17,9 @@
 ## M2 — Habits CRUD
 
 - [+] `GET /api/habits` — list all habits for the authenticated user
-- [+] `GET /api/habits/:id` — handler done; has param name bug (see Bugs)
-- [+] `PATCH /api/habits/:id` — update name, schedule, or description;
-- [+] `DELETE /api/habits/:id` — handler + service + repo done and tested;
+- [+] `GET /api/habits/:id` — get a single habit by ID
+- [+] `PATCH /api/habits/:id` — partial update (name, schedule, description); read-then-merge in service
+- [+] `DELETE /api/habits/:id` — hard delete; returns 404 if not found
 
 ---
 
@@ -48,11 +48,13 @@ Fully implemented, expanded beyond the original plan. Routes are under `/api/use
 
 ## M5 — API quality
 
-- [ ] Return the created resource in `POST /api/habits` (currently 201 with no body)
-- [ ] Return the updated resource in `PATCH /api/habits/:id` (currently 200 with no body)
-- [ ] Consistent 404 vs 500 — `ErrHabitNotFound` should produce 404, not 500, in habit handlers
-- [ ] Validate `schedule != 0` on habit create/update — reject at handler level before hitting the DB
-- [ ] Standardise error response shape — `{"error": "..."}` is used everywhere but some handlers use `gin.H{}` for success responses inconsistently
+- [ ] Return the created habit in `POST /api/habits` (currently 201 with no body) — client needs a reload to get the ID
+- [ ] Return the updated habit in `PATCH /api/habits/:id` (currently 200 with no body) — client needs a reload to reflect changes
+- [ ] `POST /api/habits/:id/checkin` — return `{"streak": N}` so the client doesn't need a second request to refresh the streak card
+- [ ] Consistent 404 vs 500 — `ErrHabitNotFound` should produce 404, not 500, in all habit and check-in handlers
+- [ ] Validate `schedule != 0` on habit create/update — reject at handler level; currently the frontend must guard this itself
+- [ ] Standardise error response shape — `{"error": "..."}` is used everywhere but some success responses use `gin.H{}` inconsistently
+- [ ] `GET /api/habits/today` — list habits with each habit's today check-in status and current streak in one call; eliminates the N+1 streak requests the frontend currently fires on sidebar load
 
 ---
 
@@ -78,7 +80,6 @@ Fully implemented, expanded beyond the original plan. Routes are under `/api/use
 
 ## Nice to have
 
-- **`GET /api/habits/today`** — all habits + today's check-in status in one call; avoids N+1 on a dashboard
 - **Best streak across all habits** — `GET /api/users/me/stats` with per-habit personal bests
 - **Soft delete for habits** — `archived_at` column instead of hard delete; preserves check-in history
 - **Token refresh** — 24-hour tokens with no refresh; add `POST /auth/refresh` or a refresh-token pair

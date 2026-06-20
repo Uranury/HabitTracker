@@ -48,6 +48,8 @@ func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler 
 }
 
 func (s *Server) setupRoutes() {
+	s.router.StaticFile("/", "./web/index.html")
+
 	authGroup := s.router.Group("/auth")
 	authGroup.POST("/signup", s.authHandler.Signup)
 	authGroup.POST("/login", s.authHandler.Login)
