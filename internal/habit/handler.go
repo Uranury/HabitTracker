@@ -18,7 +18,7 @@ func NewHandler(svc *Service) *Handler {
 
 type CreateHabitRequest struct {
 	Name        string  `json:"name" binding:"required"`
-	Schedule    uint8   `json:"schedule" binding:"required"`
+	Schedule    uint8   `json:"schedule" binding:"-"`
 	Description *string `json:"description" binding:"-"`
 }
 
@@ -26,6 +26,10 @@ func (h *Handler) CreateHabit(c *gin.Context) {
 	var req CreateHabitRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Schedule == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "schedule must have at least one day"})
 		return
 	}
 	userID, err := middleware.GetUserID(c)
@@ -104,6 +108,10 @@ func (h *Handler) UpdateHabit(c *gin.Context) {
 	var req UpdateHabitRequest
 	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Schedule != nil && *req.Schedule == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "schedule must have at least one day"})
 		return
 	}
 	if err = h.svc.UpdateHabit(c.Request.Context(), userID, habitID, req.Name, req.Schedule, req.Description); err != nil {

@@ -73,8 +73,8 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 		}
 		if i > 0 {
 			prev := checkIns[i-1]
-			expected := prevScheduledDay(checkIn.Date.In(loc), schedule)
-			if !sameDay(prev.Date.In(loc), expected) {
+			expected := prevScheduledDay(prev.Date.In(loc), schedule)
+			if !sameDay(checkIn.Date.In(loc), expected) {
 				break
 			}
 		}
