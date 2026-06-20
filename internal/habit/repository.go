@@ -33,17 +33,17 @@ func (r *repository) Create(ctx context.Context, h *Habit) error {
 }
 
 func (r *repository) Update(ctx context.Context, h *Habit) error {
-	_, err := r.GetHabitByID(ctx, h.UserID, h.ID)
+	query := `UPDATE habits SET name = ?, schedule = ?, description = ? WHERE id = ? AND user_id = ?`
+	res, err := r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.ID, h.UserID)
 	if err != nil {
 		return err
 	}
-	query := `
-		UPDATE habits SET name = COALESCE(?, name), schedule = COALESCE(?, schedule), description = ?
-		WHERE id = ? and user_id = ?
-	`
-	_, err = r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.ID, h.UserID)
+	rows, err := res.RowsAffected()
 	if err != nil {
 		return err
+	}
+	if rows == 0 {
+		return ErrHabitNotFound
 	}
 	return nil
 }

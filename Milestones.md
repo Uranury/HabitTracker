@@ -2,19 +2,13 @@
 
 ## Bugs
 
-- **`GET /api/habits/:id` param name mismatch** — route registers `:id` but `GetHabit` handler calls `c.Param("habitID")`; every request gets an empty UUID and hits a DB error. Fix: change to `c.Param("id")`.
-- **`DELETE /api/habits/:id` route not registered** — `DeleteHabit` handler is fully implemented and tested; the route is simply missing from `server.go`.
-- **`UpdateAvatar` SQL args swapped** — `user/repository.go:76` calls `ExecContext(ctx, query, userID, avatar)` but the query is `SET avatar=? WHERE id=?`; args should be `(avatar, userID)`. Every avatar update currently returns 404.
-- **Habit partial update zeroes untouched fields** — `Update` uses `COALESCE(?, col)` but Go zero values (`""`, `0`) are not SQL NULL; updating only description will silently reset `name` to `""` and `schedule` to 0. Fix: pass `sql.NullString` / `sql.NullInt64`, or build a dynamic SET clause.
-- **Check-in date not timezone-aware** — `checkin.Service.CheckIn` records `date` as `time.Now()` (UTC wall time). A user in UTC+9 checking in at 00:30 local time gets the check-in filed on the previous UTC day, breaking streak calculation which is timezone-aware.
-
 ---
 
 ## M1 — Wire the existing code
 
 - [+] Apply JWT middleware to all protected routes
-- [+] Register habit routes (POST, GET list, GET by ID, PATCH) — DELETE still missing, see Bugs
-- [ ] Register check-in routes (`POST /habits/:id/checkin`, `GET /habits/:id/checkins`, `GET /habits/:id/streak`)
+- [+] Register habit routes (POST, GET list, GET by ID, PATCH, DELETE)
+- [+] Register check-in routes (`POST /habits/:id/checkin`, `GET /habits/:id/checkins`, `GET /habits/:id/streak`)
 - [+] Fix `GetUserTimeZone()` context key bug
 - [+] Enforce one check-in per day (UNIQUE constraint in migration 3)
 
@@ -24,21 +18,18 @@
 
 - [+] `GET /api/habits` — list all habits for the authenticated user
 - [+] `GET /api/habits/:id` — handler done; has param name bug (see Bugs)
-- [+] `PATCH /api/habits/:id` — update name, schedule, or description; has partial-update bug (see Bugs)
-- [ ] `DELETE /api/habits/:id` — handler + service + repo done and tested; route not registered (see Bugs)
+- [+] `PATCH /api/habits/:id` — update name, schedule, or description;
+- [+] `DELETE /api/habits/:id` — handler + service + repo done and tested;
 
 ---
 
 ## M3 — Check-ins
 
-Service and repository exist but nothing is wired. `checkin.Service` and `checkin.Repository` are not instantiated in `infra.go`. No handler file exists.
-
-- [ ] Wire check-in service and repository in `infra.go`
-- [ ] Create `checkin/handler.go`
-- [ ] `POST /api/habits/:id/checkin` — record today's check-in (Checked); return a proper error on duplicate, not a silent DB conflict
-- [ ] `POST /api/habits/:id/skip` — record today's skip (Skipped status)
-- [ ] `GET /api/habits/:id/checkins` — paginated check-in history
-- [ ] `GET /api/habits/:id/streak` — current streak (`GetCurrentStreak` logic exists in service)
+- [+] Wire check-in service and repository in `infra.go`
+- [+] Create `checkin/handler.go`
+- [+] `POST /api/habits/:id/checkin` — record today's check-in (Checked); return a proper error on duplicate, not a silent DB conflict
+- [+] `GET /api/habits/:id/checkins` — paginated check-in history (`limit`/`offset` query params, default limit 20)
+- [+] `GET /api/habits/:id/streak` — current streak
 - [ ] `GET /api/habits/:id/streak/best` — best streak (no service method yet; requires full history scan)
 
 ---
@@ -48,7 +39,7 @@ Service and repository exist but nothing is wired. `checkin.Service` and `checki
 Fully implemented, expanded beyond the original plan. Routes are under `/api/users/me`.
 
 - [+] `GET /api/users/me` — return id, username, timezone, avatar
-- [+] `PATCH /api/users/me/avatar` — update avatar URL; has swapped SQL args bug (see Bugs)
+- [+] `PATCH /api/users/me/avatar` — update avatar URL
 - [+] `PATCH /api/users/me/timezone` — update timezone
 - [+] `PATCH /api/users/me/username` — update username
 - [+] `PATCH /api/users/me/password` — change password with old-password verification
@@ -57,8 +48,6 @@ Fully implemented, expanded beyond the original plan. Routes are under `/api/use
 
 ## M5 — API quality
 
-- [ ] Fix the three bugs above (param mismatch, missing DELETE route, avatar args)
-- [ ] Fix partial-update bug in `PATCH /api/habits/:id`
 - [ ] Return the created resource in `POST /api/habits` (currently 201 with no body)
 - [ ] Return the updated resource in `PATCH /api/habits/:id` (currently 200 with no body)
 - [ ] Consistent 404 vs 500 — `ErrHabitNotFound` should produce 404, not 500, in habit handlers

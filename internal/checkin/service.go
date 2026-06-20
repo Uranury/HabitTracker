@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// TODO: account for user timezones
-// TODO: enforce one check in per day
-// TODO: no background worker/cron job is needed to fill missed gaps, prevScheduleDay handles this by itself
+// NOTE: check-ins are stored as midnight UTC of the user's local date so streak calculation is timezone-correct
+// NOTE: one check-in per day is enforced via unique constraint on (user_id, habit_id, date)
+// NOTE: no background worker/cron job is needed to fill missed gaps, prevScheduledDay handles this by itself
 
 type Service struct {
 	repo       Repository
@@ -20,10 +20,28 @@ func NewService(repo Repository, habitsRepo habit.Repository) *Service {
 	return &Service{repo: repo, habitsRepo: habitsRepo}
 }
 
-func (svc *Service) CheckIn(ctx context.Context, userID, habitID uuid.UUID) error {
-	now := time.Now()
-	c := &CheckIn{ID: uuid.New(), UserID: userID, HabitID: habitID, Status: Checked, Date: now, CreatedAt: now, UpdatedAt: now}
+func (svc *Service) CheckIn(ctx context.Context, userID, habitID uuid.UUID, timezone string) error {
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return err
+	}
+	localNow := time.Now().In(loc)
+	localDay := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, time.UTC)
+	now := time.Now().UTC()
+	c := &CheckIn{ID: uuid.New(), UserID: userID, HabitID: habitID, Status: Checked, Date: localDay, CreatedAt: now, UpdatedAt: now}
 	return svc.repo.Record(ctx, c)
+}
+
+func (svc *Service) GetCheckins(ctx context.Context, userID, habitID uuid.UUID, limit, offset int) ([]*CheckIn, error) {
+	_, err := svc.habitsRepo.GetHabitByID(ctx, userID, habitID)
+	if err != nil {
+		return nil, err
+	}
+	checkins, err := svc.repo.GetByUserAndHabitID(ctx, userID, habitID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return checkins, nil
 }
 
 func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.UUID, timezone string) (int, error) {
@@ -36,7 +54,7 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 	if err != nil {
 		return 0, err
 	}
-	checkIns, err := svc.repo.GetByUserAndHabitID(ctx, userID, habitID)
+	checkIns, err := svc.repo.GetByUserAndHabitID(ctx, userID, habitID, -1, 0)
 	if err != nil {
 		return 0, err
 	}

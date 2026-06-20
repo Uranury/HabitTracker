@@ -73,13 +73,14 @@ func (h *Handler) GetHabit(c *gin.Context) {
 
 	hbt, err := h.svc.GetByID(c.Request.Context(), userID, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if errors.Is(err, ErrHabitNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
-	if hbt == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
-		return
-	}
+
 	c.JSON(http.StatusOK, gin.H{"habit": hbt})
 }
 

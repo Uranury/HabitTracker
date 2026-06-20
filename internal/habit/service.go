@@ -45,7 +45,7 @@ func (s *Service) GetByID(ctx context.Context, userID, habitID uuid.UUID) (*Habi
 	habit, err := s.repo.GetHabitByID(ctx, userID, habitID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, ErrHabitNotFound
 		}
 		return nil, err
 	}
@@ -53,18 +53,20 @@ func (s *Service) GetByID(ctx context.Context, userID, habitID uuid.UUID) (*Habi
 }
 
 func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, name *string, schedule *uint8, description *string) error {
-	hbt := &Habit{
-		ID:          habitID,
-		UserID:      userID,
-		Description: description,
+	existing, err := s.repo.GetHabitByID(ctx, userID, habitID)
+	if err != nil {
+		return err
 	}
 	if name != nil {
-		hbt.Name = *name
+		existing.Name = *name
 	}
 	if schedule != nil {
-		hbt.Schedule = *schedule
+		existing.Schedule = *schedule
 	}
-	return s.repo.Update(ctx, hbt)
+	if description != nil {
+		existing.Description = description
+	}
+	return s.repo.Update(ctx, existing)
 }
 
 func (s *Service) DeleteHabit(ctx context.Context, userID, habitID uuid.UUID) error {

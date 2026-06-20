@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/Uranury/HabitTracker/internal/auth"
+	"github.com/Uranury/HabitTracker/internal/checkin"
 	"github.com/Uranury/HabitTracker/internal/habit"
 	"github.com/Uranury/HabitTracker/internal/middleware"
 	"github.com/Uranury/HabitTracker/internal/user"
@@ -13,15 +14,16 @@ import (
 )
 
 type Server struct {
-	router       *gin.Engine
-	httpServer   *http.Server
-	midlw        *middleware.Auth
-	authHandler  *auth.Handler
-	habitHandler *habit.Handler
-	userHandler  *user.Handler
+	router         *gin.Engine
+	httpServer     *http.Server
+	midlw          *middleware.Auth
+	authHandler    *auth.Handler
+	habitHandler   *habit.Handler
+	userHandler    *user.Handler
+	checkinHandler *checkin.Handler
 }
 
-func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler, userHandler *user.Handler) *Server {
+func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler, userHandler *user.Handler, checkinHandler *checkin.Handler) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -36,10 +38,11 @@ func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler 
 			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
-		midlw:        middlw,
-		authHandler:  authHandler,
-		habitHandler: habitHandler,
-		userHandler:  userHandler,
+		midlw:          middlw,
+		authHandler:    authHandler,
+		habitHandler:   habitHandler,
+		userHandler:    userHandler,
+		checkinHandler: checkinHandler,
 	}
 	return server
 }
@@ -58,6 +61,11 @@ func (s *Server) setupRoutes() {
 			habitsGroup.PATCH("/:id", s.habitHandler.UpdateHabit)
 			habitsGroup.GET("/:id", s.habitHandler.GetHabit)
 			habitsGroup.GET("", s.habitHandler.ListHabits)
+			habitsGroup.DELETE("/:id", s.habitHandler.DeleteHabit)
+
+			habitsGroup.POST("/:id/checkin", s.checkinHandler.CheckIn)
+			habitsGroup.GET("/:id/checkins", s.checkinHandler.GetCheckins)
+			habitsGroup.GET("/:id/streak", s.checkinHandler.GetStreak)
 		}
 
 		usersGroup := api.Group("/users")

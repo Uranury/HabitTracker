@@ -13,7 +13,7 @@ type Repository interface {
 	Record(ctx context.Context, c *CheckIn) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*CheckIn, error)
 	UpdateStatus(ctx context.Context, checkinID uuid.UUID, status Status) error
-	GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID) ([]*CheckIn, error)
+	GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID, limit, offset int) ([]*CheckIn, error)
 }
 
 type repository struct {
@@ -27,12 +27,20 @@ func NewRepository(db *sqlx.DB) Repository {
 func (r *repository) Record(ctx context.Context, c *CheckIn) error {
 	query := `
 	INSERT INTO checkins (id, user_id, habit_id, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-	ON CONFLICT (user_id, habit_id, date) DO UPDATE SET
-		status = excluded.status,
-		updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	ON CONFLICT (user_id, habit_id, date) DO NOTHING
 	`
-	_, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date.Unix()/86400, c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
-	return err
+	res, err := r.db.ExecContext(ctx, query, c.ID, c.UserID, c.HabitID, c.Status, c.Date.Unix()/86400, c.CreatedAt.Format(time.RFC3339), c.UpdatedAt.Format(time.RFC3339))
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrAlreadyExists
+	}
+	return nil
 }
 
 func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) (_ []*CheckIn, err error) {
@@ -54,7 +62,7 @@ func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) (_ []*Ch
 		if err = rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &dateUnix, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
-		c.Date = time.Unix(dateUnix, 0).UTC()
+		c.Date = time.Unix(dateUnix*86400, 0).UTC()
 		err = util.ParseTime(&c, createdAtStr, updatedAtStr)
 		if err != nil {
 			return nil, err
@@ -83,15 +91,17 @@ func (r *repository) UpdateStatus(ctx context.Context, checkinID uuid.UUID, stat
 	return nil
 }
 
-func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID) (_ []*CheckIn, err error) {
+func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID, limit, offset int) (_ []*CheckIn, err error) {
 
 	query :=
-		`SELECT id, user_id, habit_id, status, date, created_at, updated_at 
-		FROM checkins 
-		WHERE user_id = ? AND habit_id = ? AND date <= ? 
-		ORDER BY date DESC`
+		`SELECT id, user_id, habit_id, status, date, created_at, updated_at
+		FROM checkins
+		WHERE user_id = ? AND habit_id = ?
+		ORDER BY date DESC
+		LIMIT ? OFFSET ?
+		`
 
-	rows, err := r.db.QueryxContext(ctx, query, userID, habitID, time.Now().Unix())
+	rows, err := r.db.QueryxContext(ctx, query, userID, habitID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +119,7 @@ func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uu
 		if err = rows.Scan(&c.ID, &c.UserID, &c.HabitID, &c.Status, &dateUnix, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
-		c.Date = time.Unix(dateUnix, 0).UTC()
+		c.Date = time.Unix(dateUnix*86400, 0).UTC()
 		err = util.ParseTime(&c, createdAtStr, updatedAtStr)
 		if err != nil {
 			return nil, err
