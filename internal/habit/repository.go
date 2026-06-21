@@ -27,14 +27,14 @@ func NewRepository(db *sqlx.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, h *Habit) error {
-	query := `INSERT INTO habits (id, user_id, name, schedule, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, h.ID, h.UserID, h.Name, h.Schedule, h.Description, h.CreatedAt.Format(time.RFC3339), h.UpdatedAt.Format(time.RFC3339))
+	query := `INSERT INTO habits (id, user_id, name, schedule, description, type, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.ExecContext(ctx, query, h.ID, h.UserID, h.Name, h.Schedule, h.Description, h.Type, h.Icon, h.CreatedAt.Format(time.RFC3339), h.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
 func (r *repository) Update(ctx context.Context, h *Habit) error {
-	query := `UPDATE habits SET name = ?, schedule = ?, description = ? WHERE id = ? AND user_id = ?`
-	res, err := r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.ID, h.UserID)
+	query := `UPDATE habits SET name = ?, schedule = ?, description = ?, type = ?, icon = ? WHERE id = ? AND user_id = ?`
+	res, err := r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.Type, h.Icon, h.ID, h.UserID)
 	if err != nil {
 		return err
 	}
@@ -51,8 +51,8 @@ func (r *repository) Update(ctx context.Context, h *Habit) error {
 func (r *repository) GetHabitByID(ctx context.Context, userID, habitID uuid.UUID) (*Habit, error) {
 	var h Habit
 	var createdAtStr, updatedAtStr string
-	query := `SELECT id, name, schedule, description, created_at, updated_at FROM habits WHERE user_id = ? AND id = ?`
-	err := r.db.QueryRowxContext(ctx, query, userID, habitID).Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &createdAtStr, &updatedAtStr)
+	query := `SELECT id, user_id, name, schedule, description, type, icon, created_at, updated_at FROM habits WHERE user_id = ? AND id = ?`
+	err := r.db.QueryRowxContext(ctx, query, userID, habitID).Scan(&h.ID, &h.UserID, &h.Name, &h.Schedule, &h.Description, &h.Type, &h.Icon, &createdAtStr, &updatedAtStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrHabitNotFound
@@ -66,7 +66,7 @@ func (r *repository) GetHabitByID(ctx context.Context, userID, habitID uuid.UUID
 }
 
 func (r *repository) GetHabitsByUserID(ctx context.Context, userID uuid.UUID) (_ []*Habit, err error) {
-	query := `SELECT id, name, schedule, description, created_at, updated_at FROM habits WHERE user_id = ?`
+	query := `SELECT id, name, schedule, description, type, icon, created_at, updated_at FROM habits WHERE user_id = ?`
 	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (r *repository) GetHabitsByUserID(ctx context.Context, userID uuid.UUID) (_
 	for rows.Next() {
 		var h Habit
 		var createdAtStr, updatedAtStr string
-		if err = rows.Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &createdAtStr, &updatedAtStr); err != nil {
+		if err = rows.Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &h.Type, &h.Icon, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
 		if err = util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {

@@ -1,0 +1,2 @@
+ALTER TABLE habits DROP COLUMN type;
+ALTER TABLE habits DROP COLUMN icon;

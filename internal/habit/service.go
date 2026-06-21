@@ -16,13 +16,15 @@ func NewService(r Repository) *Service {
 	return &Service{repo: r}
 }
 
-func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, schedule uint8, description *string) error {
+func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, schedule uint8, description, habitType, icon *string) error {
 	hbt := &Habit{
 		ID:          uuid.New(),
 		UserID:      userID,
 		Name:        name,
 		Schedule:    schedule,
 		Description: description,
+		Type:        habitType,
+		Icon:        icon,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -52,7 +54,7 @@ func (s *Service) GetByID(ctx context.Context, userID, habitID uuid.UUID) (*Habi
 	return habit, nil
 }
 
-func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, name *string, schedule *uint8, description *string) error {
+func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, name *string, schedule *uint8, description, habitType, icon *string) error {
 	existing, err := s.repo.GetHabitByID(ctx, userID, habitID)
 	if err != nil {
 		return err
@@ -65,6 +67,12 @@ func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, na
 	}
 	if description != nil {
 		existing.Description = description
+	}
+	if habitType != nil {
+		existing.Type = habitType
+	}
+	if icon != nil {
+		existing.Icon = icon
 	}
 	return s.repo.Update(ctx, existing)
 }

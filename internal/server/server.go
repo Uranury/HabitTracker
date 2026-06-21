@@ -67,6 +67,7 @@ func (s *Server) setupRoutes() {
 
 			habitsGroup.POST("/:id/checkin", s.checkinHandler.CheckIn)
 			habitsGroup.GET("/:id/checkins", s.checkinHandler.GetCheckins)
+			habitsGroup.DELETE("/:id/checkins/:checkin_id", s.checkinHandler.DeleteCheckin)
 			habitsGroup.GET("/:id/streak", s.checkinHandler.GetStreak)
 		}
 

@@ -12,6 +12,8 @@ type Habit struct {
 	Name        string    `json:"name" db:"name"`
 	Schedule    uint8     `json:"schedule" db:"schedule"`
 	Description *string   `json:"description" db:"description"`
+	Type        *string   `json:"type" db:"type"`
+	Icon        *string   `json:"icon" db:"icon"`
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`

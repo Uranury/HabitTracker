@@ -1,0 +1,2 @@
+ALTER TABLE habits ADD COLUMN type TEXT;
+ALTER TABLE habits ADD COLUMN icon TEXT;

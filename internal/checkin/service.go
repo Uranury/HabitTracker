@@ -2,9 +2,10 @@ package checkin
 
 import (
 	"context"
+	"time"
+
 	"github.com/Uranury/HabitTracker/internal/habit"
 	"github.com/google/uuid"
-	"time"
 )
 
 // NOTE: check-ins are stored as midnight UTC of the user's local date so streak calculation is timezone-correct
@@ -44,6 +45,10 @@ func (svc *Service) GetCheckins(ctx context.Context, userID, habitID uuid.UUID, 
 	return checkins, nil
 }
 
+func (svc *Service) DeleteCheckin(ctx context.Context, userID, habitID, checkinID uuid.UUID) error {
+	return svc.repo.Delete(ctx, userID, habitID, checkinID)
+}
+
 func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.UUID, timezone string) (int, error) {
 	hbt, err := svc.habitsRepo.GetHabitByID(ctx, userID, habitID)
 	if err != nil {
@@ -66,9 +71,7 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 
 	streak := 0
 	for i, checkIn := range checkIns {
-		weekday := checkIn.Date.In(loc).Weekday()
-		weekdayMask := uint8(1) << weekday
-		if weekdayMask&schedule == 0 || checkIn.Status != Checked {
+		if checkIn.Status != Checked {
 			break
 		}
 		if i > 0 {

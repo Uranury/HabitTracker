@@ -82,6 +82,33 @@ func (h *Handler) GetCheckins(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"checkins": checkins})
 }
 
+func (h *Handler) DeleteCheckin(c *gin.Context) {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	habitID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	checkinID, err := uuid.Parse(c.Param("checkin_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err = h.svc.DeleteCheckin(c.Request.Context(), userID, habitID, checkinID); err != nil {
+		if errors.Is(err, ErrCheckinNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 func (h *Handler) GetStreak(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {

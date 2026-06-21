@@ -4,123 +4,562 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HabitTracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; }
 
-    /* --- Auth --- */
-    #auth { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .auth-card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); width: 360px; }
-    .auth-card h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #1e293b; }
-    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
-    .tab { padding: 0.4rem 1rem 0.6rem; cursor: pointer; font-weight: 500; color: #94a3b8; font-size: 0.9rem; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+    :root {
+      --bg:           #0D0F1A;
+      --surface:      #141728;
+      --surface-2:    #1C2040;
+      --border:       #252B4A;
+      --border-soft:  #1A1F38;
+      --accent:       #FF7A1A;
+      --accent-dim:   rgba(255,122,26,0.1);
+      --accent-glow:  0 0 28px rgba(255,122,26,0.38);
+      --violet:       #7C5CF6;
+      --violet-dim:   rgba(124,92,246,0.12);
+      --text-1:       #E8ECF8;
+      --text-2:       #7A82A8;
+      --text-3:       #3E4465;
+      --green:        #34D399;
+      --green-dim:    rgba(52,211,153,0.1);
+      --red:          #F87171;
+      --red-dim:      rgba(248,113,113,0.1);
+      --font-ui:   'Space Grotesk', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --r:    8px;
+      --r-sm: 5px;
+    }
 
-    /* --- Forms --- */
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text-1);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Auth ── */
+    #auth {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(124,92,246,0.09) 0%, transparent 65%);
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2.25rem 2rem;
+      width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .auth-mark {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 13px; font-weight: 700;
+      color: #0D0F1A;
+      flex-shrink: 0;
+    }
+
+    .auth-logo-name {
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-1);
+      letter-spacing: -0.01em;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 0.4rem 1rem 0.65rem;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: var(--text-3);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s;
+    }
+
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 0.9rem; }
+
+    label {
+      display: block;
+      font-family: var(--font-ui);
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--text-2);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase; letter-spacing: 0.07em;
+    }
+
     input[type=text], input[type=password], textarea {
-      width: 100%; padding: 0.5rem 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 6px;
-      font-size: 0.95rem; color: #1e293b; outline: none; transition: border-color 0.15s;
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 0.9rem;
+      color: var(--text-1);
+      font-family: var(--font-body);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    input:focus, textarea:focus { border-color: #2563eb; }
-    textarea { resize: vertical; min-height: 72px; font-family: inherit; }
-    .err { color: #dc2626; font-size: 0.82rem; margin-top: 0.4rem; min-height: 1.1rem; }
 
-    /* --- Buttons --- */
-    button { cursor: pointer; border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 500; transition: background 0.15s, opacity 0.15s; }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .btn-primary { background: #2563eb; color: white; padding: 0.55rem 1.1rem; }
-    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-    .btn-full { width: 100%; padding: 0.65rem; font-size: 0.95rem; }
-    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.82rem; }
-    .btn-secondary { background: #f1f5f9; color: #475569; padding: 0.55rem 1.1rem; }
-    .btn-secondary:hover { background: #e2e8f0; }
-    .btn-danger { background: #fee2e2; color: #dc2626; padding: 0.55rem 1.1rem; }
-    .btn-danger:hover { background: #fecaca; }
-    .btn-success { background: #16a34a; color: white; padding: 0.6rem 1.4rem; font-size: 0.95rem; }
-    .btn-success:hover:not(:disabled) { background: #15803d; }
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
 
-    /* --- App shell --- */
+    input::placeholder, textarea::placeholder { color: var(--text-3); }
+
+    textarea { resize: vertical; min-height: 72px; font-family: var(--font-body); }
+
+    .err { color: var(--red); font-size: 0.8rem; margin-top: 0.4rem; min-height: 1.1rem; }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer; border: none;
+      border-radius: var(--r-sm);
+      font-family: var(--font-ui);
+      font-weight: 600;
+      transition: background 0.15s, opacity 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0D0F1A;
+      padding: 0.55rem 1.1rem;
+      font-size: 0.875rem;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #FF8C38;
+      box-shadow: var(--accent-glow);
+    }
+
+    .btn-full { width: 100%; padding: 0.7rem; font-size: 0.95rem; margin-top: 0.25rem; }
+
+    .btn-sm { padding: 0.28rem 0.65rem; font-size: 0.78rem; border-radius: 4px; }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      padding: 0.55rem 1.1rem;
+      font-size: 0.875rem;
+    }
+    .btn-secondary:hover { background: #202444; color: var(--text-1); }
+
+    .btn-danger {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,0.18);
+      padding: 0.55rem 1.1rem;
+      font-size: 0.875rem;
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.16); }
+
+    /* ── App shell ── */
     #app { display: none; height: 100vh; flex-direction: column; }
+
     .topbar {
-      background: #1e293b; color: white; padding: 0 1.25rem;
-      height: 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
     }
-    .topbar-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
-    .topbar-right { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #94a3b8; }
-    .topbar-user { color: #cbd5e1; }
+
+    .topbar-brand { display: flex; align-items: center; gap: 0.55rem; }
+
+    .brand-mark {
+      width: 26px; height: 26px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 700;
+      color: #0D0F1A;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-family: var(--font-ui);
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--text-1); letter-spacing: -0.01em;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 0.7rem; }
+
+    .topbar-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .topbar-user {
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      color: var(--text-2);
+    }
+
     .main { display: flex; flex: 1; overflow: hidden; }
 
-    /* --- Sidebar --- */
-    .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
-    .sidebar-header { padding: 0.9rem 1rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
-    .sidebar-header span { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
-    .habit-list { flex: 1; overflow-y: auto; }
-    .habit-item {
-      padding: 0.7rem 1rem; cursor: pointer; border-bottom: 1px solid #f8fafc;
-      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 248px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      flex-shrink: 0;
     }
-    .habit-item:hover { background: #f8fafc; }
-    .habit-item.active { background: #eff6ff; border-left: 3px solid #2563eb; padding-left: calc(1rem - 3px); }
-    .habit-name { font-size: 0.88rem; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .habit-streak-badge { font-size: 0.78rem; color: #f59e0b; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-    .sidebar-empty { padding: 1.5rem 1rem; font-size: 0.85rem; color: #94a3b8; text-align: center; }
 
-    /* --- Detail panel --- */
-    .detail { flex: 1; overflow-y: auto; padding: 1.5rem; }
-    .detail-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #94a3b8; font-size: 0.95rem; }
-    .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; }
-    .detail-name { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
-    .detail-desc { font-size: 0.875rem; color: #64748b; margin-bottom: 1rem; }
+    .sidebar-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .sidebar-header span {
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-3);
+    }
+
+    .habit-list { flex: 1; overflow-y: auto; padding: 0.3rem 0; }
+
+    .habit-item {
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      border-left: 2px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .habit-item:hover { background: var(--surface-2); }
+
+    .habit-item.active {
+      background: var(--violet-dim);
+      border-left-color: var(--violet);
+    }
+
+    .habit-name {
+      font-family: var(--font-ui);
+      font-size: 0.875rem; font-weight: 500;
+      color: var(--text-1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .habit-streak-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .sidebar-empty {
+      padding: 2rem 1rem;
+      font-size: 0.85rem; color: var(--text-3);
+      text-align: center; font-family: var(--font-ui);
+    }
+
+    /* ── Detail panel ── */
+    .detail { flex: 1; overflow-y: auto; padding: 1.75rem; }
+
+    .detail-placeholder {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%;
+      color: var(--text-3); font-size: 0.9rem;
+      font-family: var(--font-ui);
+    }
+
+    .detail-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 1.1rem;
+    }
+
+    .detail-name {
+      font-family: var(--font-ui);
+      font-size: 1.65rem; font-weight: 700;
+      color: var(--text-1); letter-spacing: -0.02em; line-height: 1.2;
+    }
+
+    .detail-desc {
+      font-size: 0.875rem; color: var(--text-2);
+      margin-top: 0.25rem;
+    }
+
     .detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 
-    /* --- Schedule chips --- */
-    .schedule-row { display: flex; gap: 0.3rem; margin-bottom: 1.25rem; }
+    /* ── Schedule chips ── */
+    .schedule-row { display: flex; gap: 0.3rem; margin-bottom: 1.5rem; }
+
     .day-chip {
-      width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 0.72rem; font-weight: 700; background: #f1f5f9; color: #94a3b8;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 700;
+      background: var(--surface-2); color: var(--text-3);
+      border: 1px solid var(--border);
     }
-    .day-chip.on { background: #2563eb; color: white; }
 
-    /* --- Stat cards --- */
-    .stat-row { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
-    .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.9rem 1.25rem; flex: 1; }
-    .stat-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
-    .stat-value { font-size: 2rem; font-weight: 800; color: #1e293b; line-height: 1; }
+    .day-chip.on {
+      background: var(--violet-dim);
+      color: var(--violet);
+      border-color: rgba(124,92,246,0.3);
+    }
 
-    /* --- Check-in section --- */
-    .checkin-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
-    .checkin-msg { font-size: 0.85rem; color: #64748b; }
-    .checkin-msg.ok { color: #16a34a; }
-    .checkin-msg.err { color: #dc2626; }
+    /* ── Stat cards ── */
+    .stat-row { display: flex; gap: 1rem; margin-bottom: 1.75rem; }
 
-    /* --- History table --- */
-    .section-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.6rem; }
-    .history-table { background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-    .history-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 1rem; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.1rem 1.4rem;
+      flex: 1;
+    }
+
+    .stat-label {
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.09em;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 2.8rem; font-weight: 700;
+      color: var(--accent); line-height: 1;
+      text-shadow: 0 0 32px rgba(255,122,26,0.45);
+    }
+
+    .stat-sub {
+      font-family: var(--font-ui);
+      font-size: 0.68rem; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-top: 0.3rem;
+    }
+
+    /* ── Check-in ── */
+    .checkin-bar { margin-bottom: 2rem; }
+
+    .btn-checkin {
+      width: 100%; padding: 0.9rem;
+      background: linear-gradient(135deg, #FF7A1A 0%, #FF4D00 100%);
+      color: #0D0F1A;
+      font-family: var(--font-ui);
+      font-size: 1rem; font-weight: 700;
+      border: none; border-radius: var(--r);
+      cursor: pointer; letter-spacing: 0.01em;
+      transition: opacity 0.15s, box-shadow 0.2s, transform 0.1s;
+    }
+
+    .btn-checkin:hover:not(:disabled) {
+      box-shadow: 0 0 32px rgba(255,122,26,0.5), 0 4px 16px rgba(0,0,0,0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-checkin:active:not(:disabled) { transform: translateY(0); }
+    .btn-checkin:disabled { opacity: 0.4; cursor: default; }
+
+    .checkin-msg {
+      margin-top: 0.6rem;
+      font-family: var(--font-ui);
+      font-size: 0.82rem; color: var(--text-2);
+      min-height: 1.2rem;
+    }
+
+    .checkin-msg.ok { color: var(--green); }
+    .checkin-msg.err { color: var(--red); }
+
+    /* ── History ── */
+    .section-label {
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-3); margin-bottom: 0.6rem;
+    }
+
+    .history-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+    }
+
+    .history-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.6rem 1rem;
+      font-size: 0.875rem;
+      border-bottom: 1px solid var(--border-soft);
+      transition: background 0.1s;
+    }
+
     .history-row:last-child { border-bottom: none; }
-    .history-date { color: #475569; }
-    .history-status { color: #16a34a; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .history-empty { padding: 1rem; color: #94a3b8; font-size: 0.875rem; text-align: center; }
+    .history-row:hover { background: var(--surface-2); }
+
+    .history-date { color: var(--text-2); font-family: var(--font-body); }
+
+    .history-status {
+      font-family: var(--font-mono);
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--green);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    .history-empty {
+      padding: 1.5rem; color: var(--text-3);
+      font-size: 0.875rem; text-align: center;
+      font-family: var(--font-ui);
+    }
+
     .pager { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
 
-    /* --- Modal --- */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 200; align-items: center; justify-content: center; }
-    .overlay.open { display: flex; }
-    .modal { background: white; border-radius: 10px; padding: 1.5rem; width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
-    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 1.25rem; }
-    .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+    /* ── Modal ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(7,9,20,0.72);
+      backdrop-filter: blur(4px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
 
-    /* --- Day picker --- */
-    .day-picker { display: flex; gap: 0.3rem; }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem; width: 420px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      animation: modal-in 0.16s ease-out;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: translateY(8px) scale(0.99); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-title {
+      font-family: var(--font-ui);
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--text-1); margin-bottom: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    .modal-footer {
+      display: flex; gap: 0.5rem; justify-content: flex-end;
+      margin-top: 1.25rem; padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Day picker ── */
+    .day-picker { display: flex; gap: 0.35rem; }
+
     .day-toggle {
-      width: 38px; height: 38px; border-radius: 50%; border: 2px solid #e2e8f0;
-      background: white; color: #94a3b8; font-size: 0.72rem; font-weight: 700;
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2); color: var(--text-3);
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 700;
       cursor: pointer; transition: all 0.12s;
     }
-    .day-toggle.on { border-color: #2563eb; background: #2563eb; color: white; }
-    .day-toggle:hover:not(.on) { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
+
+    .day-toggle.on {
+      border-color: rgba(124,92,246,0.5);
+      background: var(--violet-dim);
+      color: var(--violet);
+    }
+
+    .day-toggle:hover:not(.on) { background: #202444; color: var(--text-2); }
+
+    /* ── Icon picker ── */
+    .icon-picker { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 6px;
+      background: var(--surface-2); border: 1.5px solid transparent;
+      font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, border-color 0.1s;
+      line-height: 1;
+    }
+    .icon-btn:hover { background: #202444; }
+    .icon-btn.selected { border-color: var(--violet); background: var(--violet-dim); }
+    .icon-none { font-size: 0.75rem; color: var(--text-3); font-family: var(--font-ui); }
+
+    /* ── Habit group label ── */
+    .habit-group-label {
+      font-family: var(--font-ui);
+      font-size: 0.62rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-3);
+      padding: 0.65rem 1rem 0.2rem;
+    }
+
+    /* ── Detail type badge ── */
+    .detail-type {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-size: 0.68rem; font-weight: 600;
+      color: var(--violet);
+      background: var(--violet-dim);
+      border: 1px solid rgba(124,92,246,0.2);
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-top: 0.3rem;
+    }
+
+    /* ── Settings ── */
+    .settings-msg { font-size: 0.8rem; margin-top: 0.4rem; min-height: 1.1rem; }
+    .settings-msg.ok  { color: var(--green); }
+    .settings-msg.err { color: var(--red); }
+    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, .modal { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -128,7 +567,10 @@
 <!-- ── Auth ── -->
 <div id="auth">
   <div class="auth-card">
-    <h1>HabitTracker</h1>
+    <div class="auth-logo">
+      <div class="auth-mark">H</div>
+      <span class="auth-logo-name">HabitTracker</span>
+    </div>
     <div class="tabs">
       <div class="tab active" id="tab-login-btn" onclick="switchTab('login')">Login</div>
       <div class="tab" id="tab-signup-btn" onclick="switchTab('signup')">Sign Up</div>
@@ -169,9 +611,14 @@
 <!-- ── App ── -->
 <div id="app">
   <div class="topbar">
-    <span class="topbar-title">HabitTracker</span>
+    <div class="topbar-brand">
+      <div class="brand-mark">H</div>
+      <span class="brand-name">HabitTracker</span>
+    </div>
     <div class="topbar-right">
+      <img id="topbar-avatar" class="topbar-avatar" src="" alt="avatar" style="display:none">
       <span class="topbar-user" id="topbar-user"></span>
+      <button class="btn-secondary btn-sm" onclick="openSettings()">Settings</button>
       <button class="btn-secondary btn-sm" onclick="doLogout()">Logout</button>
     </div>
   </div>
@@ -184,7 +631,7 @@
       <div class="habit-list" id="habit-list"></div>
     </div>
     <div class="detail" id="detail">
-      <div class="detail-placeholder">Select a habit to see details</div>
+      <div class="detail-placeholder">Select a habit to get started</div>
     </div>
   </div>
 </div>
@@ -202,7 +649,15 @@
       <div class="day-picker" id="day-picker"></div>
     </div>
     <div class="form-group">
-      <label>Description <span style="color:#cbd5e1;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <label>Type <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input type="text" id="m-type" placeholder="e.g. Health, Work, Study">
+    </div>
+    <div class="form-group">
+      <label>Icon <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <div class="icon-picker" id="icon-picker"></div>
+    </div>
+    <div class="form-group">
+      <label>Description <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
       <textarea id="m-desc" placeholder="Add a description…"></textarea>
     </div>
     <div class="err" id="modal-err"></div>
@@ -213,15 +668,72 @@
   </div>
 </div>
 
+<!-- ── Settings modal ── -->
+<div class="overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-title">Account Settings</div>
+
+    <div class="section-label">Username</div>
+    <div class="form-group">
+      <input type="text" id="s-username" placeholder="New username">
+      <div class="settings-msg" id="s-username-msg"></div>
+    </div>
+    <button class="btn-primary btn-sm" onclick="doUpdateUsername()">Save</button>
+
+    <hr class="modal-divider">
+
+    <div class="section-label">Password</div>
+    <div class="form-group">
+      <input type="password" id="s-old-pass" placeholder="Current password">
+    </div>
+    <div class="form-group">
+      <input type="password" id="s-new-pass" placeholder="New password">
+      <div class="settings-msg" id="s-password-msg"></div>
+    </div>
+    <button class="btn-primary btn-sm" onclick="doUpdatePassword()">Save</button>
+
+    <hr class="modal-divider">
+
+    <div class="section-label">Timezone</div>
+    <div class="form-group">
+      <input type="text" id="s-timezone" placeholder="e.g. America/New_York">
+      <div class="settings-msg" id="s-timezone-msg"></div>
+    </div>
+    <button class="btn-primary btn-sm" onclick="doUpdateTimezone()">Save</button>
+
+    <hr class="modal-divider">
+
+    <div class="section-label">Avatar</div>
+    <div class="form-group" style="display:flex;align-items:center;gap:1rem">
+      <img id="s-avatar-preview" src="" alt="" style="display:none;width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0">
+      <input type="text" id="s-avatar" placeholder="Avatar URL" oninput="previewAvatar(this.value)">
+    </div>
+    <div class="settings-msg" id="s-avatar-msg"></div>
+    <button class="btn-primary btn-sm" onclick="doUpdateAvatar()">Save</button>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const PAGE = 15;
+const ICONS = [
+  '🏃','🏋️','🧘','💧','🥗','😴','🚴','🏊','💊','🧗',
+  '📚','📖','🧠','✏️','🎓','🔬','💡','📐','🗣️','🎯',
+  '💻','📊','📝','📅','✅','💼','📧','⏰','🗂️','🔧',
+  '🎨','🎵','🎸','📷','✈️','🍳','🌿','🙏','💰','🤝',
+  '⭐','🔥','💪','🏆','❤️',
+];
 
 let token = localStorage.getItem('ht_token');
 let selectedId = null;
 let habits = [];
 let editingId = null;
 let pickerDays = new Set();
+let pickerIcon = null;
 let historyPage = 0;
 
 // ── HTTP ──────────────────────────────────────────
@@ -292,7 +804,14 @@ async function loadProfile() {
   try {
     const d = await http('GET', '/api/users/me');
     const u = d.user;
-    document.getElementById('topbar-user').textContent = u.username + ' · ' + u.timezone;
+    document.getElementById('topbar-user').textContent = u.username + ' · ' + u.time_zone;
+    const avatarEl = document.getElementById('topbar-avatar');
+    if (u.avatar) {
+      avatarEl.src = u.avatar;
+      avatarEl.style.display = '';
+    } else {
+      avatarEl.style.display = 'none';
+    }
   } catch (_) {}
 }
 
@@ -310,18 +829,39 @@ async function loadHabits() {
   } catch (e) { console.error(e); }
 }
 
+function habitItemHTML(h) {
+  return `<div class="habit-item ${h.id === selectedId ? 'active' : ''}" onclick="pickHabit('${h.id}')">
+    <span class="habit-name">${h.icon ? h.icon + ' ' : ''}${esc(h.name)}</span>
+    <span class="habit-streak-badge" id="sb-${h.id}"></span>
+  </div>`;
+}
+
 function renderSidebar() {
   const el = document.getElementById('habit-list');
   if (!habits.length) {
     el.innerHTML = '<div class="sidebar-empty">No habits yet.<br>Create your first one!</div>';
     return;
   }
-  el.innerHTML = habits.map(h => `
-    <div class="habit-item ${h.id === selectedId ? 'active' : ''}" onclick="pickHabit('${h.id}')">
-      <span class="habit-name">${esc(h.name)}</span>
-      <span class="habit-streak-badge" id="sb-${h.id}"></span>
-    </div>
-  `).join('');
+  const hasTypes = habits.some(h => h.type);
+  if (!hasTypes) {
+    el.innerHTML = habits.map(habitItemHTML).join('');
+  } else {
+    const groups = {};
+    habits.forEach(h => {
+      const key = h.type || '\x00';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(h);
+    });
+    const keys = Object.keys(groups).sort((a, b) => {
+      if (a === '\x00') return 1;
+      if (b === '\x00') return -1;
+      return a.localeCompare(b);
+    });
+    el.innerHTML = keys.map(key =>
+      (key !== '\x00' ? `<div class="habit-group-label">${esc(key)}</div>` : '') +
+      groups[key].map(habitItemHTML).join('')
+    ).join('');
+  }
   habits.forEach(loadSidebarStreak);
 }
 
@@ -342,12 +882,14 @@ async function pickHabit(id) {
 }
 
 async function renderDetail(h) {
+  try { const d = await http('GET', '/api/habits/' + h.id); h = d.habit; } catch (_) {}
   const streak = await http('GET', '/api/habits/' + h.id + '/streak').then(d => d.streak).catch(() => 0);
   document.getElementById('detail').innerHTML = `
     <div class="detail-header">
       <div>
-        <div class="detail-name">${esc(h.name)}</div>
-        ${h.description ? `<div class="detail-desc">${esc(h.description)}</div>` : ''}
+        <div class="detail-name">${h.icon ? h.icon + ' ' : ''}${esc(h.name)}</div>
+        ${h.type ? `<div class="detail-type">${esc(h.type)}</div>` : ''}
+        ${h.description ? `<div class="detail-desc" style="margin-top:0.4rem">${esc(h.description)}</div>` : ''}
       </div>
       <div class="detail-actions">
         <button class="btn-secondary btn-sm" onclick="openEdit()">Edit</button>
@@ -360,12 +902,13 @@ async function renderDetail(h) {
     <div class="stat-row">
       <div class="stat-card">
         <div class="stat-label">Current Streak</div>
-        <div class="stat-value">${streak} <span style="font-size:1.4rem">🔥</span></div>
+        <div class="stat-value">${streak}</div>
+        <div class="stat-sub">day streak</div>
       </div>
     </div>
     <div class="checkin-bar">
-      <button class="btn-success" id="ci-btn" onclick="doCheckIn('${h.id}')">Check In Today</button>
-      <span class="checkin-msg" id="ci-msg"></span>
+      <button class="btn-checkin" id="ci-btn" onclick="doCheckIn('${h.id}')">Check In Today</button>
+      <div class="checkin-msg" id="ci-msg"></div>
     </div>
     <div class="section-label">History</div>
     <div id="history-wrap"></div>
@@ -386,7 +929,10 @@ async function loadHistory(habitId) {
       wrap.innerHTML = '<div class="history-table">' + rows.map(c => `
         <div class="history-row">
           <span class="history-date">${fmtDate(c.date)}</span>
-          <span class="history-status">${c.status}</span>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span class="history-status">${['checked','skipped','missed'][c.status] ?? c.status}</span>
+            <button class="btn-danger btn-sm" onclick="doDeleteCheckin('${habitId}','${c.id}')">×</button>
+          </div>
         </div>
       `).join('') + '</div>';
     }
@@ -421,7 +967,7 @@ async function doCheckIn(habitId) {
     await loadSidebarStreak(habits.find(h => h.id === habitId));
     const d = await http('GET', '/api/habits/' + habitId + '/streak');
     const el = document.querySelector('.stat-value');
-    if (el) el.innerHTML = d.streak + ' <span style="font-size:1.4rem">🔥</span>';
+    if (el) el.textContent = d.streak;
   } catch (e) {
     msg.textContent = e.message; msg.className = 'checkin-msg err';
     btn.disabled = false;
@@ -434,7 +980,7 @@ async function doDelete() {
   try {
     await http('DELETE', '/api/habits/' + selectedId);
     selectedId = null;
-    document.getElementById('detail').innerHTML = '<div class="detail-placeholder">Select a habit to see details</div>';
+    document.getElementById('detail').innerHTML = '<div class="detail-placeholder">Select a habit to get started</div>';
     await loadHabits();
   } catch (e) { alert(e.message); }
 }
@@ -454,15 +1000,31 @@ function toggleDay(i) {
 
 function scheduleVal() { return [...pickerDays].reduce((a, i) => a | (1 << i), 0); }
 
+function buildIconPicker() {
+  const wrap = document.getElementById('icon-picker');
+  wrap.innerHTML =
+    `<button type="button" class="icon-btn icon-none ${!pickerIcon ? 'selected' : ''}" data-icon="">None</button>` +
+    ICONS.map(ico => `<button type="button" class="icon-btn ${pickerIcon === ico ? 'selected' : ''}" data-icon="${ico}">${ico}</button>`).join('');
+  wrap.onclick = e => {
+    const btn = e.target.closest('.icon-btn');
+    if (!btn) return;
+    pickerIcon = btn.dataset.icon || null;
+    buildIconPicker();
+  };
+}
+
 function openCreate() {
   editingId = null;
   pickerDays = new Set([1,2,3,4,5]);
+  pickerIcon = null;
   document.getElementById('modal-title').textContent = 'New Habit';
   document.getElementById('m-name').value = '';
+  document.getElementById('m-type').value = '';
   document.getElementById('m-desc').value = '';
   document.getElementById('modal-submit').textContent = 'Create';
   document.getElementById('modal-err').textContent = '';
   buildPicker();
+  buildIconPicker();
   document.getElementById('habit-modal').classList.add('open');
   setTimeout(() => document.getElementById('m-name').focus(), 50);
 }
@@ -472,12 +1034,15 @@ function openEdit() {
   if (!h) return;
   editingId = h.id;
   pickerDays = new Set(DAYS.map((_,i) => i).filter(i => h.schedule & (1 << i)));
+  pickerIcon = h.icon || null;
   document.getElementById('modal-title').textContent = 'Edit Habit';
   document.getElementById('m-name').value = h.name;
+  document.getElementById('m-type').value = h.type || '';
   document.getElementById('m-desc').value = h.description || '';
   document.getElementById('modal-submit').textContent = 'Save';
   document.getElementById('modal-err').textContent = '';
   buildPicker();
+  buildIconPicker();
   document.getElementById('habit-modal').classList.add('open');
 }
 
@@ -486,15 +1051,17 @@ function closeModal() { document.getElementById('habit-modal').classList.remove(
 async function submitHabit() {
   const name = val('m-name');
   const description = val('m-desc') || null;
+  const type = val('m-type') || null;
+  const icon = pickerIcon || null;
   const schedule = scheduleVal();
   document.getElementById('modal-err').textContent = '';
   if (!name) { document.getElementById('modal-err').textContent = 'Name is required.'; return; }
   if (!schedule) { document.getElementById('modal-err').textContent = 'Pick at least one day.'; return; }
   try {
     if (editingId) {
-      await http('PATCH', '/api/habits/' + editingId, { name, schedule, description });
+      await http('PATCH', '/api/habits/' + editingId, { name, schedule, description, type, icon });
     } else {
-      await http('POST', '/api/habits', { name, schedule, description });
+      await http('POST', '/api/habits', { name, schedule, description, type, icon });
     }
     closeModal();
     await loadHabits();
@@ -506,6 +1073,87 @@ async function submitHabit() {
   } catch (e) { document.getElementById('modal-err').textContent = e.message; }
 }
 
+// ── Settings ──────────────────────────────────────
+
+function openSettings() {
+  ['s-username','s-old-pass','s-new-pass','s-timezone','s-avatar'].forEach(id => document.getElementById(id).value = '');
+  previewAvatar('');
+  ['s-username-msg','s-password-msg','s-timezone-msg','s-avatar-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = ''; el.className = 'settings-msg';
+  });
+  document.getElementById('settings-modal').classList.add('open');
+}
+
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+
+function settingsMsg(id, text, ok) {
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'settings-msg ' + (ok ? 'ok' : 'err');
+}
+
+async function doUpdateUsername() {
+  const username = val('s-username');
+  if (!username) { settingsMsg('s-username-msg', 'Username is required.', false); return; }
+  try {
+    await http('PATCH', '/api/users/me/username', { username });
+    settingsMsg('s-username-msg', 'Username updated.', true);
+    await loadProfile();
+  } catch (e) { settingsMsg('s-username-msg', e.message, false); }
+}
+
+async function doUpdatePassword() {
+  const old_password = val('s-old-pass'), new_password = val('s-new-pass');
+  if (!old_password || !new_password) { settingsMsg('s-password-msg', 'Both fields are required.', false); return; }
+  try {
+    await http('PATCH', '/api/users/me/password', { old_password, new_password });
+    settingsMsg('s-password-msg', 'Password updated.', true);
+    document.getElementById('s-old-pass').value = '';
+    document.getElementById('s-new-pass').value = '';
+  } catch (e) { settingsMsg('s-password-msg', e.message, false); }
+}
+
+async function doUpdateTimezone() {
+  const timezone = val('s-timezone');
+  if (!timezone) { settingsMsg('s-timezone-msg', 'Timezone is required.', false); return; }
+  try {
+    await http('PATCH', '/api/users/me/timezone', { timezone });
+    settingsMsg('s-timezone-msg', 'Timezone updated.', true);
+    await loadProfile();
+  } catch (e) { settingsMsg('s-timezone-msg', e.message, false); }
+}
+
+function previewAvatar(url) {
+  const img = document.getElementById('s-avatar-preview');
+  if (url.trim()) {
+    img.src = url.trim();
+    img.style.display = '';
+  } else {
+    img.src = ''; img.style.display = 'none';
+  }
+}
+
+async function doUpdateAvatar() {
+  const avatar = val('s-avatar');
+  if (!avatar) { settingsMsg('s-avatar-msg', 'Avatar URL is required.', false); return; }
+  try {
+    await http('PATCH', '/api/users/me/avatar', { avatar });
+    settingsMsg('s-avatar-msg', 'Avatar updated.', true);
+    await loadProfile();
+  } catch (e) { settingsMsg('s-avatar-msg', e.message, false); }
+}
+
+async function doDeleteCheckin(habitId, checkinId) {
+  try {
+    await http('DELETE', '/api/habits/' + habitId + '/checkins/' + checkinId);
+    await loadHistory(habitId);
+    await loadSidebarStreak(habits.find(h => h.id === habitId));
+    const d = await http('GET', '/api/habits/' + habitId + '/streak');
+    const el = document.querySelector('.stat-value');
+    if (el) el.textContent = d.streak;
+  } catch (e) { alert(e.message); }
+}
+
 // ── Utils ─────────────────────────────────────────
 
 function val(id) { return document.getElementById(id).value.trim(); }
@@ -513,7 +1161,6 @@ function show(id) { document.getElementById(id).style.display = id === 'app' ? '
 function hide(id) { document.getElementById(id).style.display = 'none'; }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(iso) {
-  // Dates are stored as midnight UTC of the user's local day — display in UTC to match
   return new Date(iso).toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric', timeZone:'UTC' });
 }
 

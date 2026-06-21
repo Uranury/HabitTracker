@@ -2,10 +2,11 @@ package habit
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/Uranury/HabitTracker/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 type Handler struct {
@@ -20,6 +21,8 @@ type CreateHabitRequest struct {
 	Name        string  `json:"name" binding:"required"`
 	Schedule    uint8   `json:"schedule" binding:"-"`
 	Description *string `json:"description" binding:"-"`
+	Type        *string `json:"type" binding:"-"`
+	Icon        *string `json:"icon" binding:"-"`
 }
 
 func (h *Handler) CreateHabit(c *gin.Context) {
@@ -38,7 +41,7 @@ func (h *Handler) CreateHabit(c *gin.Context) {
 		return
 	}
 
-	err = h.svc.Create(c.Request.Context(), userID, req.Name, req.Schedule, req.Description)
+	err = h.svc.Create(c.Request.Context(), userID, req.Name, req.Schedule, req.Description, req.Type, req.Icon)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -92,6 +95,8 @@ type UpdateHabitRequest struct {
 	Name        *string `json:"name" binding:"-"`
 	Schedule    *uint8  `json:"schedule" binding:"-"`
 	Description *string `json:"description" binding:"-"`
+	Type        *string `json:"type" binding:"-"`
+	Icon        *string `json:"icon" binding:"-"`
 }
 
 func (h *Handler) UpdateHabit(c *gin.Context) {
@@ -114,8 +119,12 @@ func (h *Handler) UpdateHabit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "schedule must have at least one day"})
 		return
 	}
-	if err = h.svc.UpdateHabit(c.Request.Context(), userID, habitID, req.Name, req.Schedule, req.Description); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err = h.svc.UpdateHabit(c.Request.Context(), userID, habitID, req.Name, req.Schedule, req.Description, req.Type, req.Icon); err != nil {
+		if errors.Is(err, ErrHabitNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 	c.Status(http.StatusOK)

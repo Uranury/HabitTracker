@@ -2,11 +2,12 @@ package checkin
 
 import (
 	"context"
+	"time"
+
 	"github.com/Uranury/HabitTracker/pkg/util"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type Repository interface {
@@ -14,6 +15,7 @@ type Repository interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*CheckIn, error)
 	UpdateStatus(ctx context.Context, checkinID uuid.UUID, status Status) error
 	GetByUserAndHabitID(ctx context.Context, userID, habitID uuid.UUID, limit, offset int) ([]*CheckIn, error)
+	Delete(ctx context.Context, userID, habitID, checkinID uuid.UUID) error
 }
 
 type repository struct {
@@ -130,4 +132,20 @@ func (r *repository) GetByUserAndHabitID(ctx context.Context, userID, habitID uu
 		return nil, err
 	}
 	return checkins, nil
+}
+
+func (r *repository) Delete(ctx context.Context, userID, habitID, checkinID uuid.UUID) error {
+	query := `DELETE FROM checkins WHERE user_id = ? AND habit_id = ? AND id = ?`
+	res, err := r.db.ExecContext(ctx, query, userID, habitID, checkinID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrCheckinNotFound
+	}
+	return nil
 }
