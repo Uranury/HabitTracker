@@ -1,7 +1,7 @@
 # Milestones
 
 ## Bugs
-
+- When checking in on an unscheduled day the streak breaks.
 ---
 
 ## M1 — Wire the existing code
