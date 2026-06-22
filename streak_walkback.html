@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Streak Walk-back Visualizer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Courier New', monospace;
+  background: #ffffff;
+  color: #1a1a2e;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 24px;
+}
+
+h1 {
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-bottom: 36px;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+/* ── schedule picker ── */
+.schedule-picker { display: flex; gap: 6px; margin-bottom: 0; }
+
+.day-btn {
+  width: 44px; height: 44px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.day-btn.active { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+.day-btn:hover:not(.active) { border-color: #9ca3af; color: #374151; }
+
+/* ── calendar ── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 20px;
+}
+
+.cal-header {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  padding: 4px 0;
+  letter-spacing: 0.08em;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  cursor: default;
+  position: relative;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.15s;
+  background: #f3f4f6;
+}
+.cal-cell.out-of-range { opacity: 0.25; }
+.cal-cell.scheduled { border-color: #bfdbfe; cursor: pointer; }
+.cal-cell.scheduled:hover { border-color: #2563eb; background: #eff6ff; }
+.cal-cell.checked { background: #dbeafe; border-color: #2563eb; }
+
+.day-num { font-size: 0.85rem; color: #9ca3af; line-height: 1; }
+.cal-cell.scheduled .day-num { color: #60a5fa; }
+.cal-cell.checked .day-num { color: #1d4ed8; }
+
+.today-pip {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #6b7280;
+  margin-top: 3px;
+}
+
+/* animation highlights */
+.cal-cell.hl-target  { box-shadow: 0 0 0 2px #f59e0b; z-index: 1; }
+.cal-cell.hl-match   { box-shadow: 0 0 0 2px #2563eb; z-index: 1; }
+.cal-cell.hl-miss    { box-shadow: 0 0 0 2px #ef4444; z-index: 1; }
+
+/* ── legend ── */
+.legend {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; color: #6b7280; }
+.legend-swatch {
+  width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0;
+}
+
+/* ── controls ── */
+.controls { display: flex; gap: 8px; margin-bottom: 28px; align-items: center; }
+
+.btn {
+  padding: 8px 20px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+  font-family: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.12s;
+}
+.btn:hover:not(:disabled) { border-color: #9ca3af; color: #111827; }
+.btn.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+.btn.primary:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+
+.step-counter { font-size: 0.78rem; color: #9ca3af; margin-left: 6px; }
+
+.speed-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; color: #9ca3af;
+  margin-left: auto;
+  cursor: default;
+  user-select: none;
+}
+.speed-label input[type=range] {
+  -webkit-appearance: none;
+  width: 80px; height: 3px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.speed-label input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+}
+#speedLabel { min-width: 26px; color: #374151; }
+
+/* ── trace ── */
+.trace-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 10px 14px;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.trace-empty { font-size: 0.82rem; color: #d1d5db; }
+
+.trace-step {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.82rem;
+  opacity: 0.2;
+  transition: opacity 0.25s;
+}
+.trace-step:last-child { border-bottom: none; }
+.trace-step.active { opacity: 1; }
+.trace-step.done { opacity: 0.5; }
+
+.s-num { color: #d1d5db; font-size: 0.72rem; }
+.s-text { color: #374151; line-height: 1.45; }
+.s-result { font-size: 0.8rem; white-space: nowrap; padding-left: 10px; }
+
+.ok   { color: #2563eb; }
+.fail { color: #ef4444; }
+.info { color: #f59e0b; }
+
+/* ── schedule + streak row ── */
+.schedule-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+.schedule-row > div:first-child { flex: 1; }
+.schedule-row .schedule-picker  { margin-bottom: 0; }
+
+.streak-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #eff6ff;
+  padding: 12px 20px;
+  min-width: 90px;
+}
+.streak-num {
+  font-size: 2.4rem;
+  color: #2563eb;
+  line-height: 1;
+  text-align: center;
+}
+.streak-num.zero { color: #d1d5db; }
+.streak-num.pending { color: #e5e7eb; }
+.streak-meta { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7280; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Streak Walk-back Visualizer</h1>
+<p class="subtitle">mirrors service.go exactly — click a scheduled day to toggle a check-in, then step through the algorithm</p>
+
+<div class="schedule-row">
+  <div>
+    <p class="section-label">Schedule  <span style="color:#9ca3af;font-size:.62rem;letter-spacing:.05em">(bits 0-6, Sunday=0)</span></p>
+    <div class="schedule-picker" id="schedulePicker"></div>
+  </div>
+  <div class="streak-box" id="streakBox">
+    <div class="streak-num pending" id="streakNum">–</div>
+    <div class="streak-meta">current streak</div>
+  </div>
+</div>
+
+<p class="section-label">Calendar  <span style="color:#9ca3af;font-size:.62rem;letter-spacing:.05em">click a scheduled cell to toggle check-in</span></p>
+<div class="calendar-grid" id="calendarGrid"></div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#dbeafe;border:1px solid #2563eb"></div>
+    checked in
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#f3f4f6;border:1px solid #bfdbfe"></div>
+    scheduled, no check-in
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#f3f4f6;border:1px solid transparent"></div>
+    not scheduled
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#f3f4f6;border:2px solid #f59e0b"></div>
+    walk-back target
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#dbeafe;border:2px solid #2563eb"></div>
+    matched ✓
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:#f3f4f6;border:2px solid #ef4444"></div>
+    mismatched ✗
+  </div>
+  <div class="legend-item" style="align-self:center">
+    <div style="width:13px;height:13px;display:flex;align-items:center;justify-content:center">
+      <div style="width:3px;height:3px;border-radius:50%;background:#6b7280"></div>
+    </div>
+    today
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn primary" id="btnRun">&#9654; play</button>
+  <button class="btn" id="btnStep" disabled>step →</button>
+  <button class="btn" id="btnReset">reset</button>
+  <span class="step-counter" id="stepCounter"></span>
+  <label class="speed-label">
+    speed
+    <input type="range" id="speedSlider" min="1" max="5" value="3" step="1">
+    <span id="speedLabel">1×</span>
+  </label>
+</div>
+
+<!--
+<p class="section-label">Trace</p>
+<div class="trace-box" id="traceBox">
+  <span class="trace-empty">press "play" to trace the algorithm</span>
+</div>
+-->
+
+
+<script>
+// ─── constants ────────────────────────────────────────────────────────────────
+const DAY_NAMES  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_ABBREV = ['S','M','T','W','T','F','S'];
+
+// ─── state ────────────────────────────────────────────────────────────────────
+// Default: Mon / Wed / Fri  (bits 1, 3, 5)
+let schedule   = (1<<1)|(1<<3)|(1<<5);
+let checkedSet = new Set(); // "YYYY-MM-DD" keys
+
+// today expressed as local midnight
+const today = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+
+// animation state
+let steps   = [];
+let stepIdx = -1;
+
+// ─── date helpers ─────────────────────────────────────────────────────────────
+function addDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+function dateKey(d) {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
+function keyToDate(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function sameDay(a, b) {
+  if (!a || !b) return false;
+  return a.getFullYear()===b.getFullYear() &&
+         a.getMonth()===b.getMonth() &&
+         a.getDate()===b.getDate();
+}
+
+// Mirrors Go's prevScheduledDay(from time.Time, schedule uint8) time.Time
+function prevScheduledDay(from, sched) {
+  let d = addDays(from, -1);
+  for (let i = 0; i < 7; i++) {
+    if (sched & (1 << d.getDay())) return d;
+    d = addDays(d, -1);
+  }
+  return null;
+}
+
+function fmt(d) {
+  if (!d) return 'none';
+  return `${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+}
+
+function scheduleBits() {
+  const on = [];
+  for (let i = 0; i < 7; i++) if (schedule & (1<<i)) on.push(DAY_NAMES[i].slice(0,2));
+  return on.join(' ') || 'none';
+}
+
+// ─── calendar ─────────────────────────────────────────────────────────────────
+function buildCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  // column headers
+  DAY_ABBREV.forEach(s => {
+    const h = document.createElement('div');
+    h.className = 'cal-header';
+    h.textContent = s;
+    grid.appendChild(h);
+  });
+
+  // range: 27 days back, padded to the preceding Sunday
+  const rangeStart  = addDays(today, -27);
+  const startSunday = addDays(rangeStart, -rangeStart.getDay());
+  const endSaturday = addDays(today, 6 - today.getDay());
+
+  let cur = new Date(startSunday);
+  while (cur <= endSaturday) {
+    const key        = dateKey(cur);
+    const dow        = cur.getDay();
+    const isScheduled = !!(schedule & (1 << dow));
+    const isChecked  = checkedSet.has(key);
+    const isToday    = sameDay(cur, today);
+    const inRange    = cur >= rangeStart && cur <= today;
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    cell.dataset.key = key;
+
+    if (!inRange)     cell.classList.add('out-of-range');
+    if (isScheduled && inRange) cell.classList.add('scheduled');
+    if (isChecked)    cell.classList.add('checked');
+
+    const num = document.createElement('div');
+    num.className = 'day-num';
+    num.textContent = cur.getDate();
+    cell.appendChild(num);
+
+    if (isToday) {
+      const pip = document.createElement('div');
+      pip.className = 'today-pip';
+      pip.title = 'today';
+      cell.appendChild(pip);
+    }
+
+    if (isScheduled && inRange) {
+      cell.addEventListener('click', () => {
+        if (checkedSet.has(key)) checkedSet.delete(key);
+        else checkedSet.add(key);
+        cell.classList.toggle('checked');
+        resetAnimation();
+      });
+    }
+
+    grid.appendChild(cell);
+    cur = addDays(cur, 1);
+  }
+}
+
+// ─── schedule picker ──────────────────────────────────────────────────────────
+function buildPicker() {
+  const picker = document.getElementById('schedulePicker');
+  picker.innerHTML = '';
+  DAY_NAMES.forEach((name, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-btn' + (schedule & (1<<i) ? ' active' : '');
+    btn.textContent = name.slice(0,2);
+    btn.title = `${name} (bit ${i})`;
+    btn.addEventListener('click', () => {
+      schedule ^= (1 << i);
+      btn.classList.toggle('active');
+      // drop check-ins on now-unscheduled days
+      for (const k of [...checkedSet]) {
+        if (!(schedule & (1 << keyToDate(k).getDay()))) checkedSet.delete(k);
+      }
+      buildCalendar();
+      resetAnimation();
+    });
+    picker.appendChild(btn);
+  });
+}
+
+// ─── algorithm (mirrors service.go) ──────────────────────────────────────────
+function buildSteps() {
+  // sort descending — mirrors ORDER BY date DESC
+  const checkins = [...checkedSet]
+    .map(keyToDate)
+    .filter(d => d <= today)
+    .sort((a, b) => b - a);
+
+  const out = [];
+
+  // ── step: find lastScheduled = prevScheduledDay(today+1, schedule) ──
+  const tomorrow      = addDays(today, 1);
+  const lastScheduled = prevScheduledDay(tomorrow, schedule);
+
+  out.push({
+    text:    `prevScheduledDay(today+1 = ${fmt(tomorrow)}, schedule={${scheduleBits()}})`,
+    result:  `→ lastScheduled = ${fmt(lastScheduled)}`,
+    cls:     'info',
+    targets: lastScheduled ? [dateKey(lastScheduled)] : [],
+    matches: [],
+    misses:  [],
+  });
+
+  if (!lastScheduled) {
+    out.push({
+      text: 'schedule bitmask is zero — no scheduled days exist',
+      result: 'streak = 0',
+      cls: 'fail', targets:[], matches:[], misses:[],
+    });
+    return { steps: out, streak: 0 };
+  }
+
+  // ── step: check if most recent check-in matches lastScheduled ──
+  const firstOk = checkins.length > 0 && sameDay(checkins[0], lastScheduled);
+  if (!firstOk) {
+    const got = checkins.length ? fmt(checkins[0]) : '(no check-ins)';
+    out.push({
+      text:    `checkins[0] = ${got}  vs  lastScheduled = ${fmt(lastScheduled)}`,
+      result:  '✗  no match — streak = 0',
+      cls:     'fail',
+      targets: [],
+      matches: [],
+      misses:  checkins.length ? [dateKey(checkins[0])] : [],
+    });
+    return { steps: out, streak: 0 };
+  }
+
+  out.push({
+    text:    `checkins[0] = ${fmt(checkins[0])}  vs  lastScheduled = ${fmt(lastScheduled)}`,
+    result:  '✓  match — streak = 1',
+    cls:     'ok',
+    targets: [],
+    matches: [dateKey(checkins[0])],
+    misses:  [],
+  });
+
+  // ── walk back through the remaining check-ins ──
+  let streak = 1;
+  for (let i = 1; i < checkins.length; i++) {
+    const expected = prevScheduledDay(checkins[i-1], schedule);
+    const match    = expected && sameDay(checkins[i], expected);
+
+    out.push({
+      text:    `prevScheduledDay(${fmt(checkins[i-1])}) = ${fmt(expected)}  ↔  checkins[${i}] = ${fmt(checkins[i])}`,
+      result:  match ? `✓  streak = ${streak+1}` : `✗  chain broken — streak = ${streak}`,
+      cls:     match ? 'ok' : 'fail',
+      targets: expected && !match ? [dateKey(expected)] : [],
+      matches: match ? [dateKey(checkins[i])] : [],
+      misses:  !match ? [dateKey(checkins[i])] : [],
+    });
+
+    if (!match) return { steps: out, streak };
+    streak++;
+  }
+
+  return { steps: out, streak };
+}
+
+// ─── animation ────────────────────────────────────────────────────────────────
+const SPEED_MS = [0, 1200, 800, 500, 280, 120]; // index = slider value 1-5
+let autoTimer  = null;
+let isPlaying  = false;
+
+function stepDelay() {
+  return SPEED_MS[parseInt(document.getElementById('speedSlider').value)];
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.cal-cell.hl-target,.cal-cell.hl-match,.cal-cell.hl-miss')
+    .forEach(c => c.classList.remove('hl-target','hl-match','hl-miss'));
+}
+
+function applyHighlights(step) {
+  (step.targets || []).forEach(k => document.querySelector(`[data-key="${k}"]`)?.classList.add('hl-target'));
+  (step.matches || []).forEach(k => document.querySelector(`[data-key="${k}"]`)?.classList.add('hl-match'));
+  (step.misses  || []).forEach(k => document.querySelector(`[data-key="${k}"]`)?.classList.add('hl-miss'));
+}
+
+function updateStepCounter() {
+  const el = document.getElementById('stepCounter');
+  if (steps.length === 0) { el.textContent = ''; return; }
+  const shown = Math.min(stepIdx + 1, steps.length);
+  el.textContent = `${shown} / ${steps.length}`;
+}
+
+function setPlayingState(playing) {
+  isPlaying = playing;
+  document.getElementById('btnRun').textContent  = playing ? '⏸ pause' : '▶ play';
+  document.getElementById('btnStep').disabled     = playing || steps.length === 0 || stepIdx >= steps.length - 1;
+}
+
+function scheduleNext() {
+  if (!isPlaying) return;
+  autoTimer = setTimeout(() => {
+    advanceStep();
+    if (isPlaying && stepIdx < steps.length) scheduleNext();
+  }, stepDelay());
+}
+
+function initTrace() {
+  const { steps: s, streak } = buildSteps();
+  steps   = s;
+  stepIdx = -1;
+
+  const box = document.getElementById('traceBox');
+  if (box) {
+    box.innerHTML = '';
+    steps.forEach((step, i) => {
+      const row = document.createElement('div');
+      row.className = 'trace-step';
+      row.id = `step-${i}`;
+      row.innerHTML =
+        `<span class="s-num">${i+1}</span>` +
+        `<span class="s-text">${step.text}</span>` +
+        `<span class="s-result ${step.cls}">${step.result}</span>`;
+      box.appendChild(row);
+    });
+  }
+
+  document.getElementById('streakNum').textContent    = '–';
+  document.getElementById('streakNum').className      = 'streak-num pending';
+  document.getElementById('streakNum').dataset.final  = streak;
+  updateStepCounter();
+}
+
+function startPlay() {
+  if (steps.length === 0) initTrace();
+  if (stepIdx >= steps.length) return; // already finished
+  setPlayingState(true);
+  scheduleNext();
+}
+
+function pausePlay() {
+  clearTimeout(autoTimer);
+  setPlayingState(false);
+  document.getElementById('btnStep').disabled = stepIdx >= steps.length - 1;
+}
+
+function togglePlay() {
+  if (isPlaying) pausePlay();
+  else startPlay();
+}
+
+function advanceStep() {
+  clearHighlights();
+
+  if (stepIdx >= 0) {
+    document.getElementById(`step-${stepIdx}`)?.classList.replace('active', 'done');
+  }
+
+  stepIdx++;
+  updateStepCounter();
+
+  if (stepIdx >= steps.length) {
+    // done — reveal streak
+    const streak = parseInt(document.getElementById('streakNum').dataset.final ?? '0');
+    const numEl  = document.getElementById('streakNum');
+    numEl.textContent = streak;
+    numEl.className   = 'streak-num' + (streak === 0 ? ' zero' : '');
+    pausePlay();
+    document.getElementById('btnStep').disabled = true;
+    return;
+  }
+
+  const step = steps[stepIdx];
+  document.getElementById(`step-${stepIdx}`)?.classList.add('active');
+  document.getElementById(`step-${stepIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  applyHighlights(step);
+  document.getElementById('btnStep').disabled = isPlaying || stepIdx >= steps.length - 1;
+}
+
+function resetAnimation() {
+  clearTimeout(autoTimer);
+  steps   = [];
+  stepIdx = -1;
+  isPlaying = false;
+  clearHighlights();
+
+  document.getElementById('btnRun').textContent  = '▶ play';
+  document.getElementById('btnStep').disabled    = true;
+  const traceBox = document.getElementById('traceBox');
+  if (traceBox) traceBox.innerHTML = '<span class="trace-empty">press "play" to trace the algorithm</span>';
+
+  const numEl = document.getElementById('streakNum');
+  numEl.textContent = '–';
+  numEl.className   = 'streak-num pending';
+  updateStepCounter();
+}
+
+// ─── prefill a few check-ins for a nice default state ────────────────────────
+function prefill() {
+  let d = new Date(today);
+  let count = 0;
+  while (count < 5) {
+    if ((schedule & (1 << d.getDay())) && d <= today) {
+      checkedSet.add(dateKey(d));
+      count++;
+    }
+    d = addDays(d, -1);
+    if (addDays(today, -28) > d) break;
+  }
+}
+
+// ─── init ─────────────────────────────────────────────────────────────────────
+prefill();
+buildPicker();
+buildCalendar();
+
+document.getElementById('btnRun').addEventListener('click', togglePlay);
+document.getElementById('btnStep').addEventListener('click', () => { pausePlay(); advanceStep(); });
+document.getElementById('btnReset').addEventListener('click', resetAnimation);
+
+const slider = document.getElementById('speedSlider');
+const speedLabels = ['', '0.5×', '1×', '1.5×', '2×', '3×'];
+slider.addEventListener('input', () => {
+  document.getElementById('speedLabel').textContent = speedLabels[slider.value];
+  // if playing, restart the timer with the new delay
+  if (isPlaying) { clearTimeout(autoTimer); scheduleNext(); }
+});
+document.getElementById('speedLabel').textContent = speedLabels[slider.value];
+</script>
+</body>
+</html>
