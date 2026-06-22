@@ -63,9 +63,10 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 	if err != nil {
 		return 0, err
 	}
-	now := time.Now().In(loc)
-	lastScheduled := prevScheduledDay(now.AddDate(0, 0, 1), schedule)
-	if len(checkIns) == 0 || !sameDay(checkIns[0].Date.In(loc), lastScheduled) {
+	localNow := time.Now().In(loc)
+	today := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, time.UTC)
+	lastScheduled := prevScheduledDay(today.AddDate(0, 0, 1), schedule)
+	if len(checkIns) == 0 || !sameDay(checkIns[0].Date, lastScheduled) {
 		return 0, nil
 	}
 
@@ -76,8 +77,8 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 		}
 		if i > 0 {
 			prev := checkIns[i-1]
-			expected := prevScheduledDay(prev.Date.In(loc), schedule)
-			if !sameDay(checkIn.Date.In(loc), expected) {
+			expected := prevScheduledDay(prev.Date, schedule)
+			if !sameDay(checkIn.Date, expected) {
 				break
 			}
 		}
