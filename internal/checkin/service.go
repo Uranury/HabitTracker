@@ -72,9 +72,6 @@ func (svc *Service) GetCurrentStreak(ctx context.Context, userID, habitID uuid.U
 
 	streak := 0
 	for i, checkIn := range checkIns {
-		if checkIn.Status != Checked {
-			break
-		}
 		if i > 0 {
 			prev := checkIns[i-1]
 			expected := prevScheduledDay(prev.Date, schedule)
