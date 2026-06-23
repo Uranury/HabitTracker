@@ -121,7 +121,7 @@
       text-transform: uppercase; letter-spacing: 0.07em;
     }
 
-    input[type=text], input[type=password], textarea {
+    input[type=text], input[type=password], input[type=date], textarea, select {
       width: 100%;
       padding: 0.55rem 0.75rem;
       background: var(--surface-2);
@@ -134,10 +134,15 @@
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    input:focus, textarea:focus {
+    select { appearance: none; cursor: pointer; }
+    select option { background: var(--surface-2); }
+
+    input:focus, textarea:focus, select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-dim);
     }
+
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 
     input::placeholder, textarea::placeholder { color: var(--text-3); }
 
@@ -251,6 +256,7 @@
       padding: 0.85rem 1rem;
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
+      gap: 0.4rem;
     }
 
     .sidebar-header span {
@@ -258,6 +264,7 @@
       font-size: 0.68rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.1em;
       color: var(--text-3);
+      flex: 1;
     }
 
     .habit-list { flex: 1; overflow-y: auto; padding: 0.3rem 0; }
@@ -379,6 +386,22 @@
 
     /* ── Check-in ── */
     .checkin-bar { margin-bottom: 2rem; }
+
+    .checkin-date-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .checkin-date-row label {
+      margin: 0; white-space: nowrap;
+      font-size: 0.68rem;
+    }
+
+    .checkin-date-row input[type=date] {
+      flex: 1; max-width: 180px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.82rem;
+    }
 
     .btn-checkin {
       width: 100%; padding: 0.9rem;
@@ -523,7 +546,7 @@
     .icon-btn.selected { border-color: var(--violet); background: var(--violet-dim); }
     .icon-none { font-size: 0.75rem; color: var(--text-3); font-family: var(--font-ui); }
 
-    /* ── Habit group label ── */
+    /* ── Habit group label (sidebar) ── */
     .habit-group-label {
       font-family: var(--font-ui);
       font-size: 0.62rem; font-weight: 700;
@@ -532,9 +555,9 @@
       padding: 0.65rem 1rem 0.2rem;
     }
 
-    /* ── Detail type badge ── */
-    .detail-type {
-      display: inline-block;
+    /* ── Detail group badge ── */
+    .detail-group {
+      display: inline-flex; align-items: center; gap: 0.3rem;
       font-family: var(--font-ui);
       font-size: 0.68rem; font-weight: 600;
       color: var(--violet);
@@ -544,6 +567,20 @@
       padding: 0.15rem 0.5rem;
       text-transform: uppercase; letter-spacing: 0.07em;
       margin-top: 0.3rem;
+    }
+
+    /* ── Groups list in modal ── */
+    .group-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .group-row:last-child { border-bottom: none; }
+    .group-row-name {
+      flex: 1;
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      color: var(--text-1);
     }
 
     /* ── Settings ── */
@@ -626,6 +663,7 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <span>Habits</span>
+        <button class="btn-secondary btn-sm" onclick="openGroupsModal()" style="font-size:0.72rem">Groups</button>
         <button class="btn-primary btn-sm" onclick="openCreate()">+ New</button>
       </div>
       <div class="habit-list" id="habit-list"></div>
@@ -649,8 +687,10 @@
       <div class="day-picker" id="day-picker"></div>
     </div>
     <div class="form-group">
-      <label>Type <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
-      <input type="text" id="m-type" placeholder="e.g. Health, Work, Study">
+      <label>Group <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <select id="m-group">
+        <option value="">None</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Icon <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
@@ -664,6 +704,29 @@
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn-primary" id="modal-submit" onclick="submitHabit()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Groups modal ── -->
+<div class="overlay" id="groups-modal" onclick="if(event.target===this)closeGroupsModal()">
+  <div class="modal">
+    <div class="modal-title">Habit Groups</div>
+    <div id="groups-list"></div>
+    <hr class="modal-divider">
+    <div style="font-family:var(--font-ui);font-size:0.85rem;font-weight:600;color:var(--text-2);margin-bottom:0.75rem">New Group</div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="g-name" placeholder="e.g. Health, Work, Study">
+    </div>
+    <div class="form-group">
+      <label>Icon <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <div class="icon-picker" id="g-icon-picker"></div>
+    </div>
+    <div class="err" id="g-err"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeGroupsModal()">Close</button>
+      <button class="btn-primary" onclick="createGroup()">Create Group</button>
     </div>
   </div>
 </div>
@@ -731,9 +794,11 @@ const ICONS = [
 let token = localStorage.getItem('ht_token');
 let selectedId = null;
 let habits = [];
+let groups = [];
 let editingId = null;
 let pickerDays = new Set();
 let pickerIcon = null;
+let groupPickerIcon = null;
 let historyPage = 0;
 
 // ── HTTP ──────────────────────────────────────────
@@ -782,7 +847,7 @@ async function doSignup() {
 
 function doLogout() {
   setToken(null);
-  selectedId = null; habits = [];
+  selectedId = null; habits = []; groups = [];
   show('auth'); hide('app');
 }
 
@@ -797,7 +862,7 @@ function setToken(t) {
 async function boot() {
   hide('auth'); show('app');
   await loadProfile();
-  await loadHabits();
+  await Promise.all([loadHabits(), loadGroups()]);
 }
 
 async function loadProfile() {
@@ -806,13 +871,95 @@ async function loadProfile() {
     const u = d.user;
     document.getElementById('topbar-user').textContent = u.username + ' · ' + u.time_zone;
     const avatarEl = document.getElementById('topbar-avatar');
-    if (u.avatar) {
-      avatarEl.src = u.avatar;
-      avatarEl.style.display = '';
-    } else {
-      avatarEl.style.display = 'none';
-    }
+    if (u.avatar) { avatarEl.src = u.avatar; avatarEl.style.display = ''; }
+    else { avatarEl.style.display = 'none'; }
   } catch (_) {}
+}
+
+// ── Groups ────────────────────────────────────────
+
+async function loadGroups() {
+  try {
+    const d = await http('GET', '/api/groups');
+    groups = d.groups || [];
+  } catch (_) {}
+}
+
+function groupName(id) {
+  if (!id) return null;
+  const g = groups.find(g => g.id === id);
+  return g ? g : null;
+}
+
+function openGroupsModal() {
+  groupPickerIcon = null;
+  document.getElementById('g-name').value = '';
+  document.getElementById('g-err').textContent = '';
+  buildGroupIconPicker();
+  renderGroupsList();
+  document.getElementById('groups-modal').classList.add('open');
+  setTimeout(() => document.getElementById('g-name').focus(), 50);
+}
+
+function closeGroupsModal() { document.getElementById('groups-modal').classList.remove('open'); }
+
+function renderGroupsList() {
+  const el = document.getElementById('groups-list');
+  if (!groups.length) {
+    el.innerHTML = '<div style="color:var(--text-3);font-size:0.85rem;font-family:var(--font-ui);padding:0.5rem 0 1rem">No groups yet.</div>';
+    return;
+  }
+  el.innerHTML = groups.map(g => `
+    <div class="group-row">
+      <span class="group-row-name">${g.icon ? g.icon + ' ' : ''}${esc(g.name)}</span>
+      <button class="btn-danger btn-sm" onclick="deleteGroup('${g.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+function buildGroupIconPicker() {
+  const wrap = document.getElementById('g-icon-picker');
+  wrap.innerHTML =
+    `<button type="button" class="icon-btn icon-none ${!groupPickerIcon ? 'selected' : ''}" data-icon="">None</button>` +
+    ICONS.map(ico => `<button type="button" class="icon-btn ${groupPickerIcon === ico ? 'selected' : ''}" data-icon="${ico}">${ico}</button>`).join('');
+  wrap.onclick = e => {
+    const btn = e.target.closest('.icon-btn');
+    if (!btn) return;
+    groupPickerIcon = btn.dataset.icon || null;
+    buildGroupIconPicker();
+  };
+}
+
+async function createGroup() {
+  const name = val('g-name');
+  document.getElementById('g-err').textContent = '';
+  if (!name) { document.getElementById('g-err').textContent = 'Name is required.'; return; }
+  try {
+    await http('POST', '/api/groups', { name, icon: groupPickerIcon || null });
+    await loadGroups();
+    document.getElementById('g-name').value = '';
+    groupPickerIcon = null;
+    buildGroupIconPicker();
+    renderGroupsList();
+    populateGroupSelect(null);
+  } catch (e) { document.getElementById('g-err').textContent = e.message; }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Delete this group? Habits in this group will be unassigned.')) return;
+  try {
+    await http('DELETE', '/api/groups/' + id);
+    await loadGroups();
+    renderGroupsList();
+    populateGroupSelect(null);
+    await loadHabits();
+  } catch (e) { alert(e.message); }
+}
+
+function populateGroupSelect(selectedGroupId) {
+  const sel = document.getElementById('m-group');
+  sel.innerHTML = '<option value="">None</option>' +
+    groups.map(g => `<option value="${g.id}" ${g.id === selectedGroupId ? 'selected' : ''}>${g.icon ? g.icon + ' ' : ''}${esc(g.name)}</option>`).join('');
 }
 
 // ── Habits ────────────────────────────────────────
@@ -842,25 +989,29 @@ function renderSidebar() {
     el.innerHTML = '<div class="sidebar-empty">No habits yet.<br>Create your first one!</div>';
     return;
   }
-  const hasTypes = habits.some(h => h.type);
-  if (!hasTypes) {
+  const hasGroups = habits.some(h => h.group_id);
+  if (!hasGroups) {
     el.innerHTML = habits.map(habitItemHTML).join('');
   } else {
-    const groups = {};
+    const buckets = {};
     habits.forEach(h => {
-      const key = h.type || '\x00';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(h);
+      const key = h.group_id || '\x00';
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(h);
     });
-    const keys = Object.keys(groups).sort((a, b) => {
+    const keys = Object.keys(buckets).sort((a, b) => {
       if (a === '\x00') return 1;
       if (b === '\x00') return -1;
-      return a.localeCompare(b);
+      const na = groups.find(g => g.id === a)?.name || '';
+      const nb = groups.find(g => g.id === b)?.name || '';
+      return na.localeCompare(nb);
     });
-    el.innerHTML = keys.map(key =>
-      (key !== '\x00' ? `<div class="habit-group-label">${esc(key)}</div>` : '') +
-      groups[key].map(habitItemHTML).join('')
-    ).join('');
+    el.innerHTML = keys.map(key => {
+      const g = key !== '\x00' ? groups.find(g => g.id === key) : null;
+      const label = g ? `${g.icon ? g.icon + ' ' : ''}${esc(g.name)}` : null;
+      return (label ? `<div class="habit-group-label">${label}</div>` : '') +
+             buckets[key].map(habitItemHTML).join('');
+    }).join('');
   }
   habits.forEach(loadSidebarStreak);
 }
@@ -881,14 +1032,23 @@ async function pickHabit(id) {
   if (h) await renderDetail(h);
 }
 
+function todayInputValue() {
+  const d = new Date();
+  return d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+}
+
 async function renderDetail(h) {
   try { const d = await http('GET', '/api/habits/' + h.id); h = d.habit; } catch (_) {}
   const streak = await http('GET', '/api/habits/' + h.id + '/streak').then(d => d.streak).catch(() => 0);
+  const g = h.group_id ? groups.find(x => x.id === h.group_id) : null;
+  const groupBadge = g
+    ? `<div class="detail-group">${g.icon ? g.icon + ' ' : ''}${esc(g.name)}</div>`
+    : '';
   document.getElementById('detail').innerHTML = `
     <div class="detail-header">
       <div>
         <div class="detail-name">${h.icon ? h.icon + ' ' : ''}${esc(h.name)}</div>
-        ${h.type ? `<div class="detail-type">${esc(h.type)}</div>` : ''}
+        ${groupBadge}
         ${h.description ? `<div class="detail-desc" style="margin-top:0.4rem">${esc(h.description)}</div>` : ''}
       </div>
       <div class="detail-actions">
@@ -907,7 +1067,11 @@ async function renderDetail(h) {
       </div>
     </div>
     <div class="checkin-bar">
-      <button class="btn-checkin" id="ci-btn" onclick="doCheckIn('${h.id}')">Check In Today</button>
+      <div class="checkin-date-row">
+        <label>Date</label>
+        <input type="date" id="ci-date" value="${todayInputValue()}" max="${todayInputValue()}">
+      </div>
+      <button class="btn-checkin" id="ci-btn" onclick="doCheckIn('${h.id}')">Check In</button>
       <div class="checkin-msg" id="ci-msg"></div>
     </div>
     <div class="section-label">History</div>
@@ -957,10 +1121,15 @@ async function loadHistory(habitId) {
 async function doCheckIn(habitId) {
   const btn = document.getElementById('ci-btn');
   const msg = document.getElementById('ci-msg');
+  const dateEl = document.getElementById('ci-date');
   btn.disabled = true;
   msg.className = 'checkin-msg';
   try {
-    await http('POST', '/api/habits/' + habitId + '/checkin');
+    const body = {};
+    if (dateEl && dateEl.value && dateEl.value !== todayInputValue()) {
+      body.date = dateEl.value;
+    }
+    await http('POST', '/api/habits/' + habitId + '/checkin', body);
     msg.textContent = 'Checked in!'; msg.className = 'checkin-msg ok';
     historyPage = 0;
     await loadHistory(habitId);
@@ -1019,12 +1188,12 @@ function openCreate() {
   pickerIcon = null;
   document.getElementById('modal-title').textContent = 'New Habit';
   document.getElementById('m-name').value = '';
-  document.getElementById('m-type').value = '';
   document.getElementById('m-desc').value = '';
   document.getElementById('modal-submit').textContent = 'Create';
   document.getElementById('modal-err').textContent = '';
   buildPicker();
   buildIconPicker();
+  populateGroupSelect(null);
   document.getElementById('habit-modal').classList.add('open');
   setTimeout(() => document.getElementById('m-name').focus(), 50);
 }
@@ -1037,12 +1206,12 @@ function openEdit() {
   pickerIcon = h.icon || null;
   document.getElementById('modal-title').textContent = 'Edit Habit';
   document.getElementById('m-name').value = h.name;
-  document.getElementById('m-type').value = h.type || '';
   document.getElementById('m-desc').value = h.description || '';
   document.getElementById('modal-submit').textContent = 'Save';
   document.getElementById('modal-err').textContent = '';
   buildPicker();
   buildIconPicker();
+  populateGroupSelect(h.group_id || null);
   document.getElementById('habit-modal').classList.add('open');
 }
 
@@ -1051,7 +1220,7 @@ function closeModal() { document.getElementById('habit-modal').classList.remove(
 async function submitHabit() {
   const name = val('m-name');
   const description = val('m-desc') || null;
-  const type = val('m-type') || null;
+  const group_id = document.getElementById('m-group').value || null;
   const icon = pickerIcon || null;
   const schedule = scheduleVal();
   document.getElementById('modal-err').textContent = '';
@@ -1059,9 +1228,9 @@ async function submitHabit() {
   if (!schedule) { document.getElementById('modal-err').textContent = 'Pick at least one day.'; return; }
   try {
     if (editingId) {
-      await http('PATCH', '/api/habits/' + editingId, { name, schedule, description, type, icon });
+      await http('PATCH', '/api/habits/' + editingId, { name, schedule, description, group_id, icon });
     } else {
-      await http('POST', '/api/habits', { name, schedule, description, type, icon });
+      await http('POST', '/api/habits', { name, schedule, description, group_id, icon });
     }
     closeModal();
     await loadHabits();
@@ -1125,12 +1294,8 @@ async function doUpdateTimezone() {
 
 function previewAvatar(url) {
   const img = document.getElementById('s-avatar-preview');
-  if (url.trim()) {
-    img.src = url.trim();
-    img.style.display = '';
-  } else {
-    img.src = ''; img.style.display = 'none';
-  }
+  if (url.trim()) { img.src = url.trim(); img.style.display = ''; }
+  else { img.src = ''; img.style.display = 'none'; }
 }
 
 async function doUpdateAvatar() {

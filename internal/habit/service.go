@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -16,19 +17,19 @@ func NewService(r Repository) *Service {
 	return &Service{repo: r}
 }
 
-func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, schedule uint8, description, habitType, icon *string) error {
+func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string, schedule uint8, description *string, groupID *uuid.UUID, icon *string) error {
+	now := time.Now().UTC()
 	hbt := &Habit{
 		ID:          uuid.New(),
 		UserID:      userID,
 		Name:        name,
 		Schedule:    schedule,
 		Description: description,
-		Type:        habitType,
+		GroupID:     groupID,
 		Icon:        icon,
-		CreatedAt:   time.Now().UTC(),
-		UpdatedAt:   time.Now().UTC(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
-
 	return s.repo.Create(ctx, hbt)
 }
 
@@ -54,7 +55,7 @@ func (s *Service) GetByID(ctx context.Context, userID, habitID uuid.UUID) (*Habi
 	return habit, nil
 }
 
-func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, name *string, schedule *uint8, description, habitType, icon *string) error {
+func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, name *string, schedule *uint8, description *string, groupID *uuid.UUID, icon *string) error {
 	existing, err := s.repo.GetHabitByID(ctx, userID, habitID)
 	if err != nil {
 		return err
@@ -68,12 +69,13 @@ func (s *Service) UpdateHabit(ctx context.Context, userID, habitID uuid.UUID, na
 	if description != nil {
 		existing.Description = description
 	}
-	if habitType != nil {
-		existing.Type = habitType
+	if groupID != nil {
+		existing.GroupID = groupID
 	}
 	if icon != nil {
 		existing.Icon = icon
 	}
+	existing.UpdatedAt = time.Now().UTC()
 	return s.repo.Update(ctx, existing)
 }
 

@@ -21,13 +21,29 @@ func NewService(repo Repository, habitsRepo habit.Repository) *Service {
 	return &Service{repo: repo, habitsRepo: habitsRepo}
 }
 
-func (svc *Service) CheckIn(ctx context.Context, userID, habitID uuid.UUID, timezone string) error {
+func (svc *Service) CheckIn(ctx context.Context, userID, habitID uuid.UUID, timezone string, date *string) error {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return err
 	}
+
 	localNow := time.Now().In(loc)
-	localDay := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, time.UTC)
+	today := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, time.UTC)
+
+	var localDay time.Time
+	if date != nil {
+		parsed, err := time.ParseInLocation("2006-01-02", *date, loc)
+		if err != nil {
+			return ErrInvalidDate
+		}
+		localDay = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+		if localDay.After(today) {
+			return ErrFutureDate
+		}
+	} else {
+		localDay = today
+	}
+
 	now := time.Now().UTC()
 	c := &CheckIn{ID: uuid.New(), UserID: userID, HabitID: habitID, Status: Checked, Date: localDay, CreatedAt: now, UpdatedAt: now}
 	return svc.repo.Record(ctx, c)

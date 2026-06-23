@@ -18,11 +18,11 @@ func NewHandler(svc *Service) *Handler {
 }
 
 type CreateHabitRequest struct {
-	Name        string  `json:"name" binding:"required"`
-	Schedule    uint8   `json:"schedule" binding:"-"`
-	Description *string `json:"description" binding:"-"`
-	Type        *string `json:"type" binding:"-"`
-	Icon        *string `json:"icon" binding:"-"`
+	Name        string     `json:"name" binding:"required"`
+	Schedule    uint8      `json:"schedule" binding:"-"`
+	Description *string    `json:"description"`
+	GroupID     *uuid.UUID `json:"group_id"`
+	Icon        *string    `json:"icon"`
 }
 
 func (h *Handler) CreateHabit(c *gin.Context) {
@@ -40,13 +40,10 @@ func (h *Handler) CreateHabit(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	err = h.svc.Create(c.Request.Context(), userID, req.Name, req.Schedule, req.Description, req.Type, req.Icon)
-	if err != nil {
+	if err = h.svc.Create(c.Request.Context(), userID, req.Name, req.Schedule, req.Description, req.GroupID, req.Icon); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.Status(http.StatusCreated)
 }
 
@@ -70,14 +67,11 @@ func (h *Handler) GetHabit(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	param := c.Param("id")
-	id, err := uuid.Parse(param)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	hbt, err := h.svc.GetByID(c.Request.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, ErrHabitNotFound) {
@@ -87,16 +81,15 @@ func (h *Handler) GetHabit(c *gin.Context) {
 		}
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"habit": hbt})
 }
 
 type UpdateHabitRequest struct {
-	Name        *string `json:"name" binding:"-"`
-	Schedule    *uint8  `json:"schedule" binding:"-"`
-	Description *string `json:"description" binding:"-"`
-	Type        *string `json:"type" binding:"-"`
-	Icon        *string `json:"icon" binding:"-"`
+	Name        *string    `json:"name"`
+	Schedule    *uint8     `json:"schedule"`
+	Description *string    `json:"description"`
+	GroupID     *uuid.UUID `json:"group_id"`
+	Icon        *string    `json:"icon"`
 }
 
 func (h *Handler) UpdateHabit(c *gin.Context) {
@@ -119,7 +112,7 @@ func (h *Handler) UpdateHabit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "schedule must have at least one day"})
 		return
 	}
-	if err = h.svc.UpdateHabit(c.Request.Context(), userID, habitID, req.Name, req.Schedule, req.Description, req.Type, req.Icon); err != nil {
+	if err = h.svc.UpdateHabit(c.Request.Context(), userID, habitID, req.Name, req.Schedule, req.Description, req.GroupID, req.Icon); err != nil {
 		if errors.Is(err, ErrHabitNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		} else {
@@ -141,8 +134,7 @@ func (h *Handler) DeleteHabit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = h.svc.DeleteHabit(c.Request.Context(), userID, habitID)
-	if err != nil {
+	if err = h.svc.DeleteHabit(c.Request.Context(), userID, habitID); err != nil {
 		if errors.Is(err, ErrHabitNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
 		} else {

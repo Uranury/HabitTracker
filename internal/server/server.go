@@ -2,28 +2,30 @@ package server
 
 import (
 	"context"
-	"github.com/Uranury/HabitTracker/internal/auth"
-	"github.com/Uranury/HabitTracker/internal/checkin"
-	"github.com/Uranury/HabitTracker/internal/habit"
-	"github.com/Uranury/HabitTracker/internal/middleware"
-	"github.com/Uranury/HabitTracker/internal/user"
 	"net/http"
 	"time"
 
+	"github.com/Uranury/HabitTracker/internal/auth"
+	"github.com/Uranury/HabitTracker/internal/checkin"
+	"github.com/Uranury/HabitTracker/internal/habit"
+	"github.com/Uranury/HabitTracker/internal/habitgroup"
+	"github.com/Uranury/HabitTracker/internal/middleware"
+	"github.com/Uranury/HabitTracker/internal/user"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	router         *gin.Engine
-	httpServer     *http.Server
-	midlw          *middleware.Auth
-	authHandler    *auth.Handler
-	habitHandler   *habit.Handler
-	userHandler    *user.Handler
-	checkinHandler *checkin.Handler
+	router           *gin.Engine
+	httpServer       *http.Server
+	midlw            *middleware.Auth
+	authHandler      *auth.Handler
+	habitHandler     *habit.Handler
+	habitGroupHandler *habitgroup.Handler
+	userHandler      *user.Handler
+	checkinHandler   *checkin.Handler
 }
 
-func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler, userHandler *user.Handler, checkinHandler *checkin.Handler) *Server {
+func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler *habit.Handler, habitGroupHandler *habitgroup.Handler, userHandler *user.Handler, checkinHandler *checkin.Handler) *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
@@ -38,11 +40,12 @@ func NewServer(middlw *middleware.Auth, authHandler *auth.Handler, habitHandler 
 			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
-		midlw:          middlw,
-		authHandler:    authHandler,
-		habitHandler:   habitHandler,
-		userHandler:    userHandler,
-		checkinHandler: checkinHandler,
+		midlw:             middlw,
+		authHandler:       authHandler,
+		habitHandler:      habitHandler,
+		habitGroupHandler: habitGroupHandler,
+		userHandler:       userHandler,
+		checkinHandler:    checkinHandler,
 	}
 	return server
 }
@@ -57,6 +60,15 @@ func (s *Server) setupRoutes() {
 	api := s.router.Group("/api")
 	api.Use(s.midlw.JWTAuth())
 	{
+		groupsGroup := api.Group("/groups")
+		{
+			groupsGroup.POST("", s.habitGroupHandler.CreateGroup)
+			groupsGroup.GET("", s.habitGroupHandler.ListGroups)
+			groupsGroup.GET("/:id", s.habitGroupHandler.GetGroup)
+			groupsGroup.PATCH("/:id", s.habitGroupHandler.UpdateGroup)
+			groupsGroup.DELETE("/:id", s.habitGroupHandler.DeleteGroup)
+		}
+
 		habitsGroup := api.Group("/habits")
 		{
 			habitsGroup.POST("", s.habitHandler.CreateHabit)

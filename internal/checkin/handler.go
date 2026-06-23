@@ -21,6 +21,10 @@ func NewHandler(svc *Service) *Handler {
 	}
 }
 
+type CheckInRequest struct {
+	Date *string `json:"date"`
+}
+
 func (h *Handler) CheckIn(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -38,12 +42,18 @@ func (h *Handler) CheckIn(c *gin.Context) {
 		return
 	}
 
-	if err = h.svc.CheckIn(c.Request.Context(), userID, habitID, userTimezone); err != nil {
-		if errors.Is(err, ErrAlreadyExists) {
+	var req CheckInRequest
+	_ = c.ShouldBindJSON(&req)
+
+	if err = h.svc.CheckIn(c.Request.Context(), userID, habitID, userTimezone, req.Date); err != nil {
+		switch {
+		case errors.Is(err, ErrAlreadyExists):
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-			return
+		case errors.Is(err, ErrFutureDate), errors.Is(err, ErrInvalidDate):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.Status(http.StatusOK)

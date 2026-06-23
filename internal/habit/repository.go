@@ -3,6 +3,7 @@ package habit
 import (
 	"context"
 	"database/sql"
+
 	"github.com/Uranury/HabitTracker/pkg/util"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -26,15 +27,42 @@ func NewRepository(db *sqlx.DB) Repository {
 	return &repository{db: db}
 }
 
+func groupIDVal(id *uuid.UUID) interface{} {
+	if id == nil {
+		return nil
+	}
+	return id.String()
+}
+
+func scanHabit(scan func(...any) error) (*Habit, error) {
+	var h Habit
+	var createdAtStr, updatedAtStr string
+	var groupIDStr sql.NullString
+	if err := scan(&h.ID, &h.UserID, &h.Name, &h.Schedule, &h.Description, &groupIDStr, &h.Icon, &createdAtStr, &updatedAtStr); err != nil {
+		return nil, err
+	}
+	if groupIDStr.Valid {
+		id, err := uuid.Parse(groupIDStr.String)
+		if err != nil {
+			return nil, err
+		}
+		h.GroupID = &id
+	}
+	if err := util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {
+		return nil, err
+	}
+	return &h, nil
+}
+
 func (r *repository) Create(ctx context.Context, h *Habit) error {
-	query := `INSERT INTO habits (id, user_id, name, schedule, description, type, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, h.ID, h.UserID, h.Name, h.Schedule, h.Description, h.Type, h.Icon, h.CreatedAt.Format(time.RFC3339), h.UpdatedAt.Format(time.RFC3339))
+	query := `INSERT INTO habits (id, user_id, name, schedule, description, group_id, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := r.db.ExecContext(ctx, query, h.ID, h.UserID, h.Name, h.Schedule, h.Description, groupIDVal(h.GroupID), h.Icon, h.CreatedAt.Format(time.RFC3339), h.UpdatedAt.Format(time.RFC3339))
 	return err
 }
 
 func (r *repository) Update(ctx context.Context, h *Habit) error {
-	query := `UPDATE habits SET name = ?, schedule = ?, description = ?, type = ?, icon = ? WHERE id = ? AND user_id = ?`
-	res, err := r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, h.Type, h.Icon, h.ID, h.UserID)
+	query := `UPDATE habits SET name = ?, schedule = ?, description = ?, group_id = ?, icon = ?, updated_at = ? WHERE id = ? AND user_id = ?`
+	res, err := r.db.ExecContext(ctx, query, h.Name, h.Schedule, h.Description, groupIDVal(h.GroupID), h.Icon, h.UpdatedAt.Format(time.RFC3339), h.ID, h.UserID)
 	if err != nil {
 		return err
 	}
@@ -49,24 +77,20 @@ func (r *repository) Update(ctx context.Context, h *Habit) error {
 }
 
 func (r *repository) GetHabitByID(ctx context.Context, userID, habitID uuid.UUID) (*Habit, error) {
-	var h Habit
-	var createdAtStr, updatedAtStr string
-	query := `SELECT id, user_id, name, schedule, description, type, icon, created_at, updated_at FROM habits WHERE user_id = ? AND id = ?`
-	err := r.db.QueryRowxContext(ctx, query, userID, habitID).Scan(&h.ID, &h.UserID, &h.Name, &h.Schedule, &h.Description, &h.Type, &h.Icon, &createdAtStr, &updatedAtStr)
+	query := `SELECT id, user_id, name, schedule, description, group_id, icon, created_at, updated_at FROM habits WHERE user_id = ? AND id = ?`
+	row := r.db.QueryRowxContext(ctx, query, userID, habitID)
+	h, err := scanHabit(row.Scan)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrHabitNotFound
 		}
 		return nil, err
 	}
-	if err = util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {
-		return nil, err
-	}
-	return &h, nil
+	return h, nil
 }
 
 func (r *repository) GetHabitsByUserID(ctx context.Context, userID uuid.UUID) (_ []*Habit, err error) {
-	query := `SELECT id, name, schedule, description, type, icon, created_at, updated_at FROM habits WHERE user_id = ?`
+	query := `SELECT id, user_id, name, schedule, description, group_id, icon, created_at, updated_at FROM habits WHERE user_id = ?`
 	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -79,16 +103,11 @@ func (r *repository) GetHabitsByUserID(ctx context.Context, userID uuid.UUID) (_
 
 	var habits []*Habit
 	for rows.Next() {
-		var h Habit
-		var createdAtStr, updatedAtStr string
-		if err = rows.Scan(&h.ID, &h.Name, &h.Schedule, &h.Description, &h.Type, &h.Icon, &createdAtStr, &updatedAtStr); err != nil {
+		h, err := scanHabit(rows.Scan)
+		if err != nil {
 			return nil, err
 		}
-		if err = util.ParseTime(&h, createdAtStr, updatedAtStr); err != nil {
-			return nil, err
-		}
-
-		habits = append(habits, &h)
+		habits = append(habits, h)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
